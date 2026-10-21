@@ -167,3 +167,5 @@ None open. Resolved 18 Oct: no guard reconnect; `GUARD_STATE` stays `false` afte
 - 2026-10-18: docs updated with team decisions (TAG_INHERIT name not asserted, hook C emits no ALLOW, native IPv6 dropped, open questions resolved). See docs/shared.md.
 - 2026-10-18: contract: added GUARD_STATE and SNAPSHOT.guard_connected (see docs/shared.md).
 - 2026-10-18: GUARD_STATE has no reconnect case; restart = whole pipeline (see docs/shared.md).
+- 2026-10-19: implemented stdin and `--fake` WebSocket bridge. Local checks passed for snapshot, unchanged forwarding, state recovery at EOF, repeat TAG, malformed input, fake story, and client-disconnect isolation; real VM and dashboard integration remain unverified.
+- 2026-10-19: re-verified `python -m py_compile guard/events.py bridge/bridge.py tests/test_events.py`, `python -m unittest tests/test_events.py` (6 passed), and `git diff --check`; live local WebSocket fake-story and stdin forwarding/EOF/reconnect-snapshot checks passed. M5 dashboard and real-guard acceptance remain pending their owners' implementations.

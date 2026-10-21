@@ -208,3 +208,4 @@ None open. Resolved 18 Oct: decoder tests live in `tests/test_events.py`, which 
 - 2026-10-18: file created. Bootstrap only; `events.py` is a stub.
 - 2026-10-18: docs updated with team decisions (TAG_INHERIT name not asserted, hook C emits no ALLOW, native IPv6 dropped, open questions resolved). See docs/shared.md.
 - 2026-10-18: you now own tests/test_events.py (see docs/shared.md).
+- 2026-10-19: implemented the Contract 1/3 decoder and added hand-packed unprivileged tests; `python -m unittest tests/test_events.py` passed (6 tests). Linux VM integration remains unverified.
