@@ -82,7 +82,7 @@ allow = [
 
 - [ ] **M1 Tagging** (K + G, 18–19 Oct): Guard starts in audit mode and prints `READY`; `cat demo/project/.env` → `TAG` event for `cat`; `sudo bpftool map dump name tagged` shows the entry
 
-Policy validation is a prerequisite for M1. Start now; no VM needed.
+Policy validation is **done** and tested (31 tests, all passing, 1 skipped on Windows for the symlink case; see section 10). It was a prerequisite for M1, not M1 itself: M1 still needs the guard to start in audit mode, print `READY` and tag `cat demo/project/.env` in the VM, so the box above stays unticked. The schema itself is settled -- no new keys, no renames, no new rules -- so no `contract:` commit is needed for the policy format.
 
 ## 7. How to run and test your part
 
@@ -110,7 +110,18 @@ Start-here prompt:
 
 None open. Resolved 18 Oct (see docs/shared.md): empty `protect` invalid, empty `allow` valid, missing `mode` → audit, unknown keys rejected, no map-size checks, you own `tests/test_policy.py`.
 
+**Applied 20 Oct (Azaan, Contract 2 clarifications).** All three are implemented in `guard/policy.py` as part of the schema, each with a test in `tests/test_policy.py`:
+- a missing `allow` key is treated as empty, not an error;
+- a missing `protect` key is rejected, same as an empty one;
+- `allow` entries must be strings; a non-string entry is rejected (an integer like `5` would otherwise silently become `0.0.0.5/32`).
+
+**Open:**
+- Should a valid CLI `--mode` override accept a policy file whose `mode` value is invalid? The schema says `mode` must be `audit` or `enforce` and that the CLI overrides the file, but not which wins when the file's value is invalid. Current behaviour: the file is validated first, so an invalid file `mode` is rejected even when `--mode` supplies a valid value. **Behaviour deliberately left unchanged**; a different answer is a behaviour change and needs a `contract:` entry in `docs/shared.md`.
+
 ## 10. Work log
 
 - 2026-10-18: file created.
 - 2026-10-18: docs updated with team decisions (TAG_INHERIT name not asserted, hook C emits no ALLOW, native IPv6 dropped, open questions resolved). See docs/shared.md.
+- 2026-10-21: schema and validation implemented in `guard/policy.py` (stdlib only, imports no `bcc`) per section 4: `mode` in {audit, enforce}, missing -> `audit`; `protect` must be present, non-empty, absolute and existing, resolved with `os.stat` (follows symlinks, so the real file is protected) and `st_ino` kept; `allow` may be empty or missing, each entry must be a string parsing with `ipaddress.ip_network(entry, strict=False)`, split into IPv4 and IPv6; unknown keys rejected; map-size limits not checked. On any error a clear message naming the key and value goes to stderr and the CLI exits 2.
+- 2026-10-21: `tests/test_policy.py` = **31 tests, all passing, 1 skipped**. The skip is `test_symlink_resolves_to_target_inode`: creating a symlink on Windows needs the `SeCreateSymbolicLink` privilege (or Developer Mode), so it is skipped here and must be re-run on Linux in the VM. The companion test proving `os.stat` is used instead of `os.lstat` does pass on Windows.
+- 2026-10-21: all three 20 Oct Contract 2 clarifications implemented and tested (missing `allow` -> empty, missing `protect` -> rejected, non-string `allow` entry rejected). One open question recorded in section 9: whether a valid `--mode` override should accept a file with an invalid `mode`. No behaviour changed.
