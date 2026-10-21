@@ -1,0 +1,2 @@
+# Generated desktop binaries; rebuild with npm run package:linux.
+release/

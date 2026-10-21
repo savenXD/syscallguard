@@ -1,74 +1,84 @@
 # Devansh: Track U, dashboard (`dashboard/`)
 
+> Rewritten 2026-10-21 to match the code as it is now. The original plan (plain HTML/JS, no framework) is obsolete: the dashboard is a React + Vite + Tailwind app wrapped in Electron. To connect it to `bridge.py`, `guard.py` or any other source, read the dedicated guide **[GUIDE_CONNECT_TO_OTHER_PARTS.md](GUIDE_CONNECT_TO_OTHER_PARTS.md)**. This file explains the dashboard itself.
+
 ## 1. Your part, in plain words
 
 Think of the server as an office building and every running program as a person inside it. SyscallGuard is a guard at the exit doors: anyone who touched a confidential file gets a stamp on their hand, and a stamped person may only go to approved rooms. If a stamped person heads for the street, the guard stops them.
 
-You build the **security screen**. It shows, live: whether the building is protected, who is stamped right now, every incident as it happens, and the guard's current instructions. When the guard stops someone, the screen turns red with exactly who it was, what they read and where they tried to go. Judges watch this screen from about 1.5 m away. It is the demo.
+You build the **security screen**. It shows, live: whether the building is protected, who is stamped right now, every incident as it happens, and the guard's current instructions. When the guard stops someone, the screen turns red with exactly who it was, what they read and where they tried to go. Judges watch it from about 1.5 m away. It is the demo.
 
-It shows only what actually arrived from the guard. Nothing is invented, faked or animated without a real event behind it.
-
-You can build all of it today, on any OS, with no VM: `python3 bridge/bridge.py --fake` plays a realistic story.
+It shows only what actually arrived from the guard. Nothing is invented. The one exception is the explicitly labelled demo feed ("Demo · mock feed") used for rehearsal while the backend tracks are unfinished.
 
 ## 2. Where it sits
 
 ```
- VM:  guard.py ──JSON lines──▶ bridge.py ──WebSocket :8765──┐
- or:  bridge.py --fake  (any machine) ──────────────────────┤
-                                                            ▼
- host laptop:  Electron main.js ──bridge URL──▶ preload.js ──contextBridge──▶ renderer
-                                                            renderer/app.js opens the WebSocket
-                                                            renderer/index.html + style.css draw it
+ VM:  guard.py --JSON lines--> bridge.py --WebSocket :8765--+
+ or:  bridge.py --fake / dashboard/mock_bridge.py ----------+
+ or:  embedded demo feed (npm run demo, inside Electron) ----+
+                                                             v
+ host: Electron main.js --bridge URL--> preload.js --window.bridgeUrl--> React app
+       (or any browser: renderer/index.html?bridge=ws://...)  src/hooks/useSyscallGuard.ts
+                                                              src/lib/guardClient.ts (WebSocket)
 ```
+
+The dashboard is a **read-only WebSocket client**. Full wiring details, the exact message schema it accepts, and troubleshooting are in [GUIDE_CONNECT_TO_OTHER_PARTS.md](GUIDE_CONNECT_TO_OTHER_PARTS.md).
 
 ## 3. Files you own
 
-- `dashboard/package.json`: Electron devDependency, `"start": "electron ."`
-- `dashboard/main.js`: Electron main process
-- `dashboard/preload.js`: exposes the bridge URL to the renderer
-- `dashboard/renderer/index.html`: page structure, CSP
-- `dashboard/renderer/app.js`: WebSocket client, state, rendering
-- `dashboard/renderer/style.css`: styles
-- `dashboard/docs/devansh.md`: this file (sections 6, 9, 10 only, during development)
+Everything under `dashboard/`. Key places:
 
-Do not edit: `bridge/`, `guard/events.py` (Divyanshu), `guard/guard.py`, `guard/policy.py` (Hifza), `guard/bpf/` (Azaan), `demo/`, `scripts/`, `tests/` (Suyash).
+| Path | What it is |
+|---|---|
+| `main.js`, `preload.js` | Electron main process and the preload that exposes only `window.bridgeUrl`. Flags: `--bridge=`, `--demo`, `--live`, `--kiosk`, `--fullscreen`; env `SG_BRIDGE_URL`. |
+| `src/main.tsx`, `src/App.tsx` | React entry; page shell, global shortcuts, toasts, Readme toggle. |
+| `src/lib/guardClient.ts` | WebSocket client: validation, reconnect (2 s), snapshot replace, 100-event cap, 5 s alert timer, 250 ms render batching. **The place that decides what is accepted.** |
+| `src/hooks/useSyscallGuard.ts` | React hook around `GuardClient`; resolves the bridge URL. |
+| `src/lib/settings.tsx` | Persisted settings (localStorage `sg.settings.v1`): grain, smooth scroll, reduce motion, toasts, audio alerts, **coding agent**. |
+| `src/lib/` others | `activity.ts` (chart buckets), `incidents.ts` (export/copy), `blockAudio.ts`, `smoothScroll.ts`, `utils.ts`. |
+| `src/components/` | UI, see section 4. |
+| `src/styles/globals.css` | Tokens, `.card`, `.eyebrow`, grain, wire-dot animation. |
+| `tailwind.config.js` | Fonts (`sans` Geist, `mono` Geist Mono, `display` Space Grotesk), colours. |
+| `renderer/` | **Build output** (generated by `npm run build` via `scripts/browser-build.cjs`); do not edit by hand. |
+| `mock_bridge.py` | Python mock Contract 4 server, scenarios `basic|stage|stretch|all`. |
+| `demo/story.json` | The default mostly-allowed demo story shared by Python mock and embedded desktop feed. |
+| `branding/` | Logo sources and generator (`npm run branding`). |
+| `tests/` | `node --test` suites (`npm test`). |
+| `scripts/` | Browser build, branding, rehearsal/recording/verification helpers. |
+| `docs/` | This file and [GUIDE_CONNECT_TO_OTHER_PARTS.md](GUIDE_CONNECT_TO_OTHER_PARTS.md). |
 
-## 4. What to build
+Do not edit: `bridge/`, `guard/` (any file), `demo/` at the repo root, `scripts/` at the repo root, root `tests/`. Need a new field in the protocol? Ask via `docs/shared.md`.
 
-### `main.js`
+## 4. What the dashboard contains (current state)
 
-- One `BrowserWindow` with `webPreferences`: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, `preload: path.join(__dirname, "preload.js")`.
-- `--kiosk` (and/or fullscreen) support for the stage.
-- Bridge URL, first match wins: `--bridge=ws://...` argument, `SG_BRIDGE_URL` env var, default `ws://127.0.0.1:8765`. Hand it to `preload.js` (e.g. via `additionalArguments` in `webPreferences`).
-- Load `renderer/index.html`.
+Page order, top to bottom. Sidebar links jump to each section (`overview`, `activity`, `processes`, `policy`, `events`); the highlighted item follows scroll position (scroll listener in `Sidebar.tsx`, last section whose top passed 30% of the viewport; bottom of page = last item).
 
-### `preload.js`
+**Top bar** (`TopBar.tsx`, fixed, 64 px)
+- Brand: logo + "SyscallGuard" in Geist semibold ("Guard" in grey).
+- Search button / Ctrl+K command palette (`CommandPalette.tsx`).
+- **Readme** button: swaps the page for `Readme.tsx`, a visual explanation of what `bridge.py` accepts (flow, four rules, field table, clickable example per event type, SNAPSHOT/GUARD_STATE). Click again to return.
+- Status pill: dot + Live/Idle/Offline/Unknown, joined to a mode chip (ENFORCE green, AUDIT amber).
+- Bell: alerts dropdown fed by real `BLOCK`/`WOULD_BLOCK`/`ERROR` events, unread badge.
+- Settings button; profile menu with `Avatar.tsx` (monochrome shield icon on black, thin light ring) and placeholder "Operator, Security analyst, ID SG-0412".
 
-- `contextBridge.exposeInMainWorld(...)` with the bridge URL only. Nothing else crosses into the renderer.
+**Sidebar** (`Sidebar.tsx`): fixed rail, 68 px collapsed, 216 px on hover, in-flow spacer keeps the grid aligned. Items: Overview, Activity, Processes, Policy, Event stream; System: Settings. (The Shortcuts item was removed; the shortcuts sheet remains in the profile menu.) Footer shows bridge/guard dots always; mode, clock and bridge URL slide open on hover; footer height is content-sized (no fixed height).
 
-### `renderer/` (plain HTML/CSS/JS, no framework, no build step)
+**Overview / hero** (`Hero.tsx`): headline by state (Perimeter secure / Exfiltration blocked / Would have blocked / Kernel error / Bridge offline / Waiting for the guard) in Space Grotesk; subline; **coding-agent badge** (top right); and the flow row *Protected file, Tagged process, Kernel guard, Destination*:
+- Connectors are CSS-animated dots (`.wire-dot`, keyframes `wire-flow`), **one dot per tagged process**, flowing continuously left to right; frozen/dimmed when the feed is not live; the final connector shows an X when blocked.
+- Protected file box lists up to two file names then `+N` (for example `.env, .xyz +3`), sub-label "N protected files".
+- When a process has a taint lineage (mock only) the left side becomes the `TaintTrail.tsx` chain.
 
-- Content-Security-Policy `<meta>` in `index.html`: `connect-src ws: wss:`, nothing remote otherwise (scripts and styles from `'self'` only).
-- Bridge URL: the preload value if present; otherwise `?bridge=` from the page URL (browser fallback); otherwise `ws://127.0.0.1:8765`.
-- The renderer opens the WebSocket itself.
-- Auto-reconnect every 2 s on close or error.
-- On `SNAPSHOT`: **replace** all state (mode, protect, allow, tagged, recent). This is what makes a mid-demo restart recover.
-- On `GUARD_STATE`: update the guard-feeding indicator only. It is not a guard event; don't add it to the log.
-- On any other event: append to the log; update the tagged list (`TAG`/`TAG_INHERIT` add, `UNTAG` remove); update policy from `READY`.
+**Coding-agent badge** (`AgentBadge.tsx`): which coding agent runs inside the guarded environment. Setting `agent` = `none | claude | chatgpt`, chosen in Settings ("Coding agent" tiles). Default "Not set / Pick one in Settings". Real logos (simple-icons, CC0, inlined SVG; the OpenAI mark represents ChatGPT). While the bridge is connected **and** the guard is feeding it shows "Running": logo rotates, a blurred arc of the agent's colour orbits, a glow pulses, and the status text cycles *Thinking, Reading files, Running tools, Writing code, Working* with bouncing dots. The cycling text is decorative (the protocol carries no agent activity); only "Running vs Idle" reflects real feed state.
 
-**The five panels (brief §6.4):**
+**Activity** (`ActivityChart.tsx`, `Breakdown.tsx`, `Metrics.tsx`): stacked bar / line view toggle (Line = one-second batches over the last 60 s, Bar = five minutes), event-mix donut with legend hover sync, and four metric cards: Total requests (ALLOW+BLOCK), Total allowed, Total blocked, Tagged now, each with a sparkline. Big numbers use Space Grotesk, tabular figures.
 
-1. **Status banner.** Calm green "Protected"; every event type not listed here leaves it green. On `BLOCK`: loud red for 5 s with `BLOCKED: <comm> (PID <tgid>) read <file> → tried <daddr>:<dport>`. On `WOULD_BLOCK` in audit mode: amber. On `ERROR`: red, showing the event's `message` instead of the BLOCKED text, and it stays until the next event arrives (sticky, not timed). If a field is null, omit that part of the text (no `file` → drop `read <file>`).
-2. **Tagged processes.** Live list: comm, PID, file, inherited-from (`parent_tgid`), since. For inherited entries `comm` is the name at fork (usually the parent's, e.g. `python3` for a curl child); show it as-is.
-3. **Event log.** Newest first, coloured by type. Keep the newest 100 entries.
-4. **Policy panel.** Mode, protected files, allowlist (from `SNAPSHOT`/`READY`).
-5. **Connection indicators, two separate ones.** *Bridge reachable*: WebSocket connected / reconnecting. *Guard feeding*: from `SNAPSHOT.guard_connected`, then each `GUARD_STATE` message. While the bridge is unreachable the guard state is unknown; show it as unknown, not as feeding.
+**Processes** (`Processes.tsx`): live tagged table; clicking a row filters the event stream to that PID and its children (removable chip, scrolls to events). **Policy** (`Policy.tsx`): mode, protected files, allowlist, with copy buttons. **Event stream** (`EventStream.tsx`): newest first, max 100, type filters, expandable rows, copy fields, filtered JSON/CSV export, full incident copy.
 
-**Look:** dark theme, high contrast, large type readable from 1.5 m. Plain and functional with clear hierarchy: the banner is the loudest thing, then tagged processes, then the log. No template-style gradients, glow effects or decorative animation. Colour carries meaning (green/amber/red, per-type log colours), so keep it consistent.
+**Settings drawer** (`SettingsDrawer.tsx`, Ctrl+,): Coding agent, Appearance (grain, smooth scroll, reduce animations), Alerts (audio ping, toasts), Connection (bridge URL with copy, guard mode, reconnect interval), Reset to defaults. The bridge URL is read-only here; it is set at launch.
 
-**Real data only:** render fields as they arrive. Never fake a value, a count or a transition that no event caused.
+**Typography**: Geist (body), Geist Mono (labels, ids, code), Space Grotesk (hero headline and big numbers; Tailwind class `font-display`). Instrument Serif is still installed but no longer used.
 
-**Browser fallback:** `renderer/index.html` must work opened directly in a normal browser (`file://.../index.html?bridge=ws://<vm-ip>:8765`). That is the stage fallback if Electron breaks. So `app.js` must not depend on Electron APIs.
+**Design rules** (condensed from `DESIGN_LEGACY.md` and review feedback): black and zinc foundation; colour only carries meaning (green allowed, red blocked, amber audit); no white borders on hero widgets; no decorative data. Text is never colour-only; labels are at least 13 px.
 
 ## 5. Contract excerpts
 
@@ -109,6 +119,7 @@ Contract excerpt (source of truth: ARCHITECTURE.md, section "Contract 3: Guard C
 
 The `READY` event also carries `"protect": [...]` and `"allow": [...]`. The `ERROR` event carries `"message": "..."`.
 
+
 ## 6. Your milestones
 
 - [ ] **M5 Live dashboard** (G + U, fake: 19 Oct, real: 20 Oct): Electron shows `SNAPSHOT` state on connect; `BLOCK` turns the banner red within 1 s; restarting Electron mid-run recovers state
@@ -121,65 +132,100 @@ Dashboard side: everything working against `--fake` by 19 Oct; against the real 
 **Blocked by:** Divyanshu's `bridge.py --fake` for live testing (agree to have it on day one).
 **You block:** Suyash and P (rehearsals, backup video, runbook screenshots).
 
+
 ## 7. How to run and test your part
 
-Any OS, no VM:
+Prerequisite: Node 20+, `cd dashboard && npm ci`.
 
 ```bash
-python3 bridge/bridge.py --fake --port 8765           # terminal 1
-cd dashboard && npm install && npm start               # terminal 2
-```
-
-Expected: both indicators show connected/feeding; the policy panel fills from `SNAPSHOT`; within ~10 s the story plays: python3 tagged, an ALLOW to 127.0.0.1:8080, a child tagged with inherited-from (comm `python3`, the name at fork), banner red for 5 s on the BLOCK by `curl` to 192.168.122.1:9999, then UNTAG clears the list.
-
-Acceptance checks:
-
-- Kill the bridge: the indicator shows reconnecting; restart it: reconnects within ~2 s.
-- Guard gone: pipe a single line into the bridge (`printf '...' | python3 bridge/bridge.py`); after EOF the guard indicator shows not feeding while the bridge indicator stays connected.
-- Quit and restart Electron mid-story: state comes back from `SNAPSHOT`.
-- Browser fallback: open `dashboard/renderer/index.html?bridge=ws://127.0.0.1:8765` in Firefox/Chrome.
-
-Against the VM:
-
-```bash
+npm run demo                      # self-contained: embedded mock feed, labelled demo
+npm run demo -- --kiosk           # same, fullscreen stage mode
+python3 mock_bridge.py --port 8765 [--scenario stage|stretch|all]   # terminal 1: Python mock
+npm start                         # terminal 2: build + Electron, connects to ws://127.0.0.1:8765
 SG_BRIDGE_URL=ws://<vm-ip>:8765 npm start
 npm start -- --bridge=ws://<vm-ip>:8765 --kiosk
+npm run dev                       # Vite dev server for UI work (browser, use ?bridge=ws://127.0.0.1:8765)
+npm run build                     # tsc + vite build + copy into renderer/ (browser fallback)
+npx tsc --noEmit -p .             # type-check only
+npm test                          # node --test tests/*.test.cjs (loopback sockets needed)
+npm run package:linux             # AppImage + unpacked app into release/
 ```
+
+Browser fallback (stage backup if Electron breaks): after `npm run build`, open `dashboard/renderer/index.html?bridge=ws://<vm-ip>:8765` in Chrome or Firefox.
+
+Real pipeline (VM): `sudo python3 guard/guard.py -p policy/policy.toml | python3 bridge/bridge.py --host 0.0.0.0 --port 8765`, then point the dashboard at it. Step by step with troubleshooting: [GUIDE_CONNECT_TO_OTHER_PARTS.md](GUIDE_CONNECT_TO_OTHER_PARTS.md).
+
+Acceptance checks: kill/restart the bridge (reconnect within ~2 s, state restored); EOF on the bridge's stdin (guard indicator flips, bridge stays connected); restart Electron mid-run (state returns from `SNAPSHOT`); browser fallback works.
 
 | If this happens | Check |
 |---|---|
-| Blank window, CSP errors in DevTools | CSP blocks inline script/style. Move them into `app.js` / `style.css`. |
-| `require is not defined` in renderer | Correct: `nodeIntegration` is off. Don't use Node in the renderer. |
-| Bridge URL is `undefined` | Preload not loaded (path) or not exposed via `contextBridge`. |
-| Can't reach the VM bridge | Bridge started with `--host 0.0.0.0`? VM firewall port 8765 open? |
-| Restart loses state | You're appending `SNAPSHOT` instead of replacing state with it. |
-| Banner stays red | The 5 s timer isn't reset when a new `BLOCK` arrives, or isn't cleared. |
-| Works in Electron, not in browser | `app.js` touches an Electron-only API. Read the URL from `?bridge=` fallback. |
+| Blank window, CSP errors | CSP blocks inline script and remote assets. Bundle everything locally (fonts come from `@fontsource*`). |
+| `require is not defined` | Correct: `nodeIntegration` is off. |
+| Bridge URL is `undefined` | Preload not loaded or `contextBridge` expose missing. |
+| Packaged app shows mock data | Packaged builds default to demo. Pass `--bridge=` or `--live`. |
+| Connected but nothing appears | Events silently rejected by validation: see GUIDE_CONNECT_TO_OTHER_PARTS.md section 4.5. |
+| Fonts look wrong | `src/main.tsx` imports the `@fontsource` packages; run `npm ci`. |
+
 
 ## 8. Working with AI agents
 
-Safety rules that apply here (from AGENTS.md):
+Safety rules (from AGENTS.md): `dashboard/` must never import `bcc` or need root; contracts are law (you consume Contracts 3 and 4); show real fields only.
 
-- `dashboard/` must never import `bcc` or need root.
-- Contracts are law: you consume Contracts 3 and 4. Need a new field? Ask for it in `docs/shared.md`; don't invent it in the renderer.
-- Show real fields only. Never fake or animate data that didn't arrive.
+Conventions now: React 18 + TypeScript + Tailwind + Framer Motion + lucide-react; `cn()` from `src/lib/utils.ts` for class merging; cards use `.card` via `Reveal`; labels use `.eyebrow`. Escape nothing by hand: React escapes text, never use `dangerouslySetInnerHTML` with event strings (`comm` and file paths come from the system). Keep Electron `contextIsolation` and `sandbox` on. No CDN or remote fonts (CSP blocks them and the stage may be offline).
 
-Conventions: plain HTML/CSS/JS, no framework, no bundler, no CDN. Only `electron` as a devDependency. Escape every string from events before inserting into the DOM (`textContent`, not `innerHTML`): `comm` and file paths come from the system.
+Common pitfalls: relaxing `isGuardEvent` to "make events show" (fix the sender instead, or add a contract); editing `renderer/` (generated); forgetting that `SNAPSHOT` replaces state; treating the agent badge text as real telemetry; adding colour that isn't a state signal.
 
-Common pitfalls: disabling `contextIsolation`/`sandbox` "to make it work"; remote fonts or scripts (CSP will block them, and the stage may be offline); small text; colour-only signals with no text label.
-
-Commit format: `feat(dashboard): M5 banner and event log`, `fix(dashboard): reconnect loop`.
+Commit format: `feat(dashboard): ...`, `fix(dashboard): ...`.
 
 Start-here prompt to paste to an agent:
 
-> I'm Devansh, Track U. Read AGENTS.md, docs/shared.md, dashboard/docs/devansh.md and ARCHITECTURE.md Contracts 3 and 4. Work only in dashboard/. Build against `python3 bridge/bridge.py --fake`. Keep contextIsolation/sandbox on, no framework, no remote resources, real data only. At the end, update only sections 6, 9 and 10 of my file.
+> Read AGENTS.md, docs/shared.md, dashboard/docs/devansh.md, dashboard/docs/GUIDE_CONNECT_TO_OTHER_PARTS.md and ARCHITECTURE.md Contracts 3 and 4. Work only in dashboard/. Build against `python3 dashboard/mock_bridge.py` or `npm run demo`. Keep contextIsolation/sandbox on, no remote resources, real data only. At the end, update only sections 6, 9 and 10 of devansh.md.
 
 ## 9. Open questions
 
-None open. Resolved 18 Oct: `ERROR` banner is sticky until the next event; guard state arrives via `GUARD_STATE` and `SNAPSHOT.guard_connected` (Contract 4).
+- `bridge/bridge.py` is still a comment-only stub in this checkout. The dashboard was verified against `dashboard/mock_bridge.py` and the embedded feed, not the real pipeline. M5 stays unchecked until a real `guard.py | bridge.py` run passes.
+- Real VM pipeline, projector readability at 1.5 m and a 30-minute stage-host soak remain pending (earlier notes pointed to `phase3-acceptance.md`, `phase4-demo.md`, `stretch-demo-protocol.md`; those files are **not present** in `dashboard/docs/` in this checkout).
+- Stretch S1/S2 (raw sockets, taint lineage) are accepted only from a feed that sets `source:"mock"`. A real contract must be agreed by K and G before the dashboard accepts them from a real bridge.
+- The coding-agent badge is user-selected in Settings; no protocol field reports the agent. If the team wants real detection, propose a field via `docs/shared.md`.
+- Readme page text is hand-written from ARCHITECTURE.md Contracts 3 and 4; update `src/components/Readme.tsx` if the contract changes.
+- Resolved 18 Oct: `ERROR` banner is sticky until the next event; guard state arrives via `GUARD_STATE` and `SNAPSHOT.guard_connected`.
 
 ## 10. Work log
 
 - 2026-10-18: file created. Bootstrap only; dashboard files are stubs.
 - 2026-10-18: docs updated with team decisions (TAG_INHERIT name not asserted, hook C emits no ALLOW, native IPv6 dropped, open questions resolved). See docs/shared.md.
 - 2026-10-18: ERROR banner sticky; two indicators (bridge reachable, guard feeding) via GUARD_STATE (see docs/shared.md).
+- 2026-10-20: Built full dashboard frontend architecture in React + Vite + Tailwind + Framer Motion per devansh_design.md. Implemented tactile grain overlay, 3D Sentinel Orb, 22-capsule segmented posture gauge, spline traffic waveform chart with floating tooltip pill, metric cards with vector sparklines, animated tagged table, audit event log, policy panel, and dual status indicators. Built and verified against Contract 4 WebSocket protocol.
+- 2026-10-20: Senior UX/UI design pass completed. Enforced strict monochromatic carbon architecture (#08080A / #0C0D10) with surgical data pigments. Eliminated AI slop hallmarks: removed square-div icon branding in favor of typographic wordmark, replaced cheap ping pulses with animated SVG radar reticle, unified repetitive metric cards into a cohesive TelemetryStrip, added Cartesian grid lines to the spline chart, and resolved grid alignment across all bento modules.
+- 2026-10-20: Senior developer production-grade overhaul. Eradicated AI slop: stripped all forced monospace fonts and all-caps styling across headers and cards in favor of a modern sans-serif hierarchy; strictly removed fake data generators (random spline waveforms, fake 22-capsule gauge, hardcoded ring buffer bar); integrated matching optical SVGs aligned seamlessly with text; enforced a disciplined black-and-white carbon foundation (#08080A / #0E0F13) with surgical crimson/amber alert colors only on actual kernel events; validated against Contract 4.
+- 2026-10-20: Refined collapsible sidebar in Sidebar.tsx per user review: fixed sidebar to viewport (position: fixed) so it never scrolls with page content, using an in-flow layout spacer to smoothly adapt the main container width. Completely eliminated vertical shifting of SVGs and text by stabilizing category eyebrow and footer heights. Reduced expanded width from 264px to an optimized 216px (collapsed 68px) with GPU-accelerated CSS cubic-bezier transition, delivering a lag-free, rock-solid experience.
+- 2026-10-20: Visual hierarchy reorganization per user review: trimmed Hero live status card height by ~140px (compact padding, proportional clamp typography, and condensed data flow nodes) ensuring immediate first-frame visibility; placed Activity time-series and Event mix cards directly under Hero; streamlined the 4 metric cards into a concise, high-density telemetry strip with sparklines positioned below Activity/Breakdown.
+- 2026-10-20: Built enterprise top navigation bar in Navbar.tsx matching sidebar header height (76px): displays project name and breadcrumb context (SyscallGuard / node-01), live eBPF LSM security posture badge, interactive Cmd+K search and jump palette, live bridge latency/clock telemetry, threat notifications bell with alert drawer, settings modal with endpoint copy and audio alert toggle, and operator session ID badge (root@sg-01).
+- 2026-10-20: App shell pass per user review: replaced Navbar.tsx with a full-width TopBar.tsx above the sidebar (logo + name, Ctrl+K command palette, alerts dropdown fed by real BLOCK/WOULD_BLOCK/ERROR events, settings, profile menu with cartoon Avatar and placeholder ID SG-0412). Added a working settings drawer (grain, Lenis smooth scroll, reduced motion, toasts; persisted in localStorage), shortcuts sheet and block toasts. Sidebar kept as the hover-collapse rail, moved under the top bar, plus a System group. Plain black background with faint static grain behind content. Navbar.tsx is now unused.
+- 2026-10-20: Phase 2 interactions completed: implemented cross-panel PID filtering (clicking a row in Processes highlights the process, filters the EventStream to that PID/parent with an active removable filter chip, and scrolls directly to events); added tactile one-click copy with inline Check/Copied feedback across Policy protected paths, allowed CIDRs, expanded event fields (file, destination, pid), and Settings bridge URL; added synchronized donut-to-legend hover states in Breakdown; validated full compilation with npm run build and tsc.
+
+
+- 2026-10-20: Implemented Phase 3 within dashboard/: resilient validated/batched WebSocket client and snapshot replacement; immediate dual connection truthfulness; timed BLOCK/sticky ERROR handling; bounded 100-event state/DOM with stable identities; filtered JSON/CSV exports and full incident clipboard; optional persisted synthesized block audio; classic-script file-browser fallback/CSP; 13px labels and responsive chart/header fixes; burst/counter animation hardening and scroll/audio teardown. Build and 11 regression tests passed, including 90,000 simulated events. Headless Chrome/Electron scaling and mock feed checks passed; Firefox file fallback loaded live events and fonts. Real 50/sec smoke retained 100 rows with valid SVG; actual filtered exports verified. Physical/live-VM/30-minute host acceptance remains pending; M5 not ticked. Evidence and repeatable commands: docs/phase3-acceptance.md.
+
+- 2026-10-20: Built Phase 4/5 demo scope while other tracks remain unfinished. Added source-labelled 60-second mock stage/stretch/all storyboards; three independent mock bridge/Electron starts passed direct/curl/UDP visible-red checks (0.657–0.761s) with actual mid-run Electron restart/SNAPSHOT PID recovery. Recorded a labelled 1920x1080, 60s, 60fps mock MP4 and verified 3600 frames. Added mock-gated raw socket metadata/banner/log/chart handling and explicit pipe/file taint lineage in Processes/Hero, PID filtering, incident copying and exports. Browser tests passed seven widths/scales and snapshot lineage restoration; 15 regression tests/build passed. Actual kernel contracts remain unchanged; M5/M7 and physical acceptance remain pending. Rehearsal evidence and proposed payload handoff are in dashboard/docs/phase4-demo.md and stretch-demo-protocol.md.
+
+- 2026-10-20: Added desktop branding and native packaging per user request. Generated a shield/circuit concept with built-in image_gen, saved its source/prompts, normalized a genuine editable SVG master, and added a one-command Sharp pipeline producing PNG sizes 16–1024, SVG/dark variants, favicon ICO/PNG/SVG, touch/web icons, Windows ICO and macOS ICNS. Wired UI/favicons/native window/package icons to the generated assets. Added native identity/menu/window restore/single-instance handling while retaining renderer sandbox/context isolation and existing controls. Added an embedded loopback mock feed so npm run demo and packaged default launch need no Python bridge; explicit --bridge/SG_BRIDGE_URL select live mode. Built and launched Linux x64 AppImage, verified packaged ASAR renderer/fonts/icons/demo with zero console errors; all 17 tests passed. Run instructions are in dashboard/README.md; rebranding guide in dashboard/branding/README.md. Real VM/projector acceptance remains pending.
+
+- 2026-10-20: Changed the default embedded desktop demo to mostly routine traffic: 90 allowed connections to policy-approved loopback destinations and only two blocked attempts per 60-second cycle (22s/47s). Existing UI and separate stage/stretch rehearsal fixtures remain intact; desktop lineage coverage uses the dedicated rehearsal fixture.
+
+- 2026-10-20: Reordered metric cards to Total requests, Total allowed, Total blocked, Tagged now per user request, preserving visual styling. Total requests sums reported ALLOW and BLOCK decisions, excludes lifecycle events, and uses the same predicate for its sparkline. Activity-chart redesign discussed but not changed.
+
+- 2026-10-20: Simplified Activity to green allowed-request bars and numbered red block markers on a separate lane with dotted time guides; audit WOULD_BLOCK remains amber and lifecycle events are excluded. Preserved card/range styling, added local-clock endpoints/Now, interval tooltips, per-bar units and retained-history disclosure; default range is 1m. TypeScript/production build and deterministic Chrome check (90 allows/two blocks, three ranges, 1024/1440/1920 widths, no overflow/invalid SVG/console errors) passed. Screenshot: artifacts/activity-chart.png. Rebuilt Linux AppImage.
+
+- 2026-10-20: Reverted Activity to the previous stacked bar chart, including tag/allow/block series, original hover legend, relative time labels and 5m default, at user request. Retained the updated four metric cards and mostly-allowed demo feed.
+
+- 2026-10-20: Replaced Live status flow connectors' fixed three decorative dots with one PID-keyed dot per current tagged process. Dot counts follow snapshots and process lifecycle updates, with process-name/PID tooltips and a one-dot legend; paused connectors retain dimmed dots and denied flows do not send dots beyond the kernel. Verified rendered counts for 0, 1, 5, 12, 2 and 0 processes, production build, and all 17 regression tests (loopback test required sandbox network access).
+
+- 2026-10-20: Replaced Activity time-range pills with Bar/Line view toggle, preserving original stacked bars as default. Added smooth mint line with subtle area gradient for request totals in clock-aligned 10-second batches across five minutes; blocked batches carry small red dots, hover shows exact interval/total/allowed/blocked and separate audit counts, newest batch is marked live. Lifecycle events are excluded from request totals; retained-history scope is disclosed. Added regression coverage for batch boundaries, future/out-of-window exclusion and bounded smooth path geometry. All 18 tests/build passed; Chrome toggle/hover/block-dot/gradient checks and 1024/1440/1920 layouts passed without invalid SVG/overflow/console errors. Evidence: artifacts/activity-line-chart.png.
+
+- 2026-10-20: Found standalone mock basic story still sent one ALLOW per BLOCK while embedded desktop used mostly allowed traffic. Unified default Python basic and desktop on demo/story.json; every 15th request is now blocked (28 ALLOW/2 BLOCK per minute). Explicit attack stage/stretch scenarios remain unchanged. Completed requested Bar/Line toggle and native rebuild alongside this feed correction.
+
+- 2026-10-20: Changed only the Line view to one-second request batches across the latest 60 seconds, with per-second hover ranges and block dots. Original five-minute Bar view, mint curve/gradient, demo ratio and metric cards retained. Updated batch-boundary regression checks.
+
+- 2026-10-21: UI review pass. Hero connector dots rebuilt as CSS keyframe animation (continuous, one per tagged process, staggered); removed the "How data moves / 1 dot = 1 tagged process" caption; Protected file box now shows up to two names plus `+N`. Top bar: new sans wordmark, unified Live+mode pill, monochrome shield Avatar (the cartoon and the colourful/green variants were dropped), new **Readme** button and `Readme.tsx` page documenting exactly what `bridge.py` accepts. Sidebar: removed the keyboard-shortcuts item, content-sized footer, scroll-spy rewritten as a scroll listener with a 900 ms click lock. Replaced the hero's status icon with the **coding-agent badge** (`AgentBadge.tsx`, real simple-icons logos, rotating/orbiting animation, cycling activity text) and added the `agent` setting with a Settings picker (default Not set). Replaced the serif display font with Space Grotesk (`font-display`) on the hero headline, metric cards and breakdown total. Type-check and `vite build` pass; not re-run: `npm test`, real VM.
+- 2026-10-21: Rewrote this file to match the current React/Vite/Electron code and added `docs/GUIDE_CONNECT_TO_OTHER_PARTS.md` (how to connect the dashboard to bridge/guard/any source, exact accepted schema, validation pitfalls, reference feeder).

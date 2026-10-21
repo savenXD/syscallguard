@@ -1,0 +1,8 @@
+{
+  "name": "SyscallGuard",
+  "shortName": "SyscallGuard",
+  "description": "Kernel security operations dashboard",
+  "master": "mark.svg",
+  "background": "#080808",
+  "foreground": "#ffffff"
+}

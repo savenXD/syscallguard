@@ -1,0 +1,17 @@
+{
+  "source": "mock",
+  "capture": {
+    "programs": [],
+    "streams": [
+      {
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "60/1",
+        "nb_read_frames": "3600"
+      }
+    ],
+    "format": {
+      "duration": "60.000000"
+    }
+  }
+}

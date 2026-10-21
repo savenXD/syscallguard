@@ -1,0 +1,516 @@
+[
+  {
+    "at": 0,
+    "event": {
+      "v": 1,
+      "ts": 1000,
+      "type": "READY",
+      "hook": null,
+      "tgid": null,
+      "parent_tgid": null,
+      "comm": null,
+      "file": null,
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce",
+      "protect": [
+        "/home/demo/syscallguard/demo/project/.env"
+      ],
+      "allow": [
+        "127.0.0.0/8",
+        "::1/128"
+      ]
+    }
+  },
+  {
+    "at": 1,
+    "event": {
+      "v": 1,
+      "ts": 1001,
+      "type": "TAG",
+      "hook": "file_open",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 2,
+    "event": {
+      "v": 1,
+      "ts": 1002,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 4,
+    "event": {
+      "v": 1,
+      "ts": 1004,
+      "type": "BLOCK",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "192.168.122.1",
+      "dport": 9999,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 10,
+    "event": {
+      "v": 1,
+      "ts": 1010,
+      "type": "UNTAG",
+      "hook": "exit",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 12,
+    "event": {
+      "v": 1,
+      "ts": 1012,
+      "type": "TAG",
+      "hook": "file_open",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 13,
+    "event": {
+      "v": 1,
+      "ts": 1013,
+      "type": "TAG_INHERIT",
+      "hook": "fork",
+      "tgid": 4422,
+      "parent_tgid": 4421,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 16,
+    "event": {
+      "v": 1,
+      "ts": 1016,
+      "type": "BLOCK",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "curl",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "192.168.122.1",
+      "dport": 9999,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 22,
+    "event": {
+      "v": 1,
+      "ts": 1022,
+      "type": "UNTAG",
+      "hook": "exit",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "curl",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 22,
+    "event": {
+      "v": 1,
+      "ts": 1022,
+      "type": "UNTAG",
+      "hook": "exit",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 24,
+    "event": {
+      "v": 1,
+      "ts": 1024,
+      "type": "TAG",
+      "hook": "file_open",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 28,
+    "event": {
+      "v": 1,
+      "ts": 1028,
+      "type": "BLOCK",
+      "hook": "sendmsg",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "192.168.122.1",
+      "dport": 9999,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 34,
+    "event": {
+      "v": 1,
+      "ts": 1034,
+      "type": "UNTAG",
+      "hook": "exit",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 36,
+    "event": {
+      "v": 1,
+      "ts": 1036,
+      "type": "TAG",
+      "hook": "file_open",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 38,
+    "event": {
+      "v": 1,
+      "ts": 1038,
+      "type": "BLOCK",
+      "hook": "socket_create",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce",
+      "socket_family": "AF_PACKET",
+      "socket_type": "SOCK_RAW"
+    }
+  },
+  {
+    "at": 44,
+    "event": {
+      "v": 1,
+      "ts": 1044,
+      "type": "BLOCK",
+      "hook": "socket_create",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce",
+      "socket_family": "AF_INET",
+      "socket_type": "SOCK_RAW"
+    }
+  },
+  {
+    "at": 49,
+    "event": {
+      "v": 1,
+      "ts": 1049,
+      "type": "UNTAG",
+      "hook": "exit",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 50,
+    "event": {
+      "v": 1,
+      "ts": 1050,
+      "type": "TAG",
+      "hook": "file_open",
+      "tgid": 4601,
+      "parent_tgid": null,
+      "comm": "cat",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 50.3,
+    "event": {
+      "v": 1,
+      "ts": 1050.3,
+      "type": "TAINT",
+      "hook": "file_permission",
+      "tgid": 4601,
+      "parent_tgid": null,
+      "comm": "cat",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce",
+      "taint": {
+        "inode": "9007199254740993",
+        "kind": "pipe",
+        "path": null
+      }
+    }
+  },
+  {
+    "at": 50.6,
+    "event": {
+      "v": 1,
+      "ts": 1050.6,
+      "type": "TAG",
+      "hook": "file_permission",
+      "tgid": 4602,
+      "parent_tgid": null,
+      "comm": "tee",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce",
+      "lineage": [
+        {
+          "writer_tgid": 4601,
+          "writer_comm": "cat",
+          "reader_tgid": 4602,
+          "reader_comm": "tee",
+          "inode": "9007199254740993",
+          "kind": "pipe",
+          "path": null
+        }
+      ]
+    }
+  },
+  {
+    "at": 50.9,
+    "event": {
+      "v": 1,
+      "ts": 1050.9,
+      "type": "TAINT",
+      "hook": "file_permission",
+      "tgid": 4602,
+      "parent_tgid": null,
+      "comm": "tee",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce",
+      "taint": {
+        "inode": "9007199254740995",
+        "kind": "file",
+        "path": "/tmp/sg-demo-copy"
+      }
+    }
+  },
+  {
+    "at": 51.2,
+    "event": {
+      "v": 1,
+      "ts": 1051.2,
+      "type": "TAG",
+      "hook": "file_permission",
+      "tgid": 4603,
+      "parent_tgid": null,
+      "comm": "curl",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce",
+      "lineage": [
+        {
+          "writer_tgid": 4601,
+          "writer_comm": "cat",
+          "reader_tgid": 4602,
+          "reader_comm": "tee",
+          "inode": "9007199254740993",
+          "kind": "pipe",
+          "path": null
+        },
+        {
+          "writer_tgid": 4602,
+          "writer_comm": "tee",
+          "reader_tgid": 4603,
+          "reader_comm": "curl",
+          "inode": "9007199254740995",
+          "kind": "file",
+          "path": "/tmp/sg-demo-copy"
+        }
+      ]
+    }
+  },
+  {
+    "at": 52,
+    "event": {
+      "v": 1,
+      "ts": 1052,
+      "type": "BLOCK",
+      "hook": "connect",
+      "tgid": 4603,
+      "parent_tgid": null,
+      "comm": "curl",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "192.168.122.1",
+      "dport": 9999,
+      "mode": "enforce",
+      "lineage": [
+        {
+          "writer_tgid": 4601,
+          "writer_comm": "cat",
+          "reader_tgid": 4602,
+          "reader_comm": "tee",
+          "inode": "9007199254740993",
+          "kind": "pipe",
+          "path": null
+        },
+        {
+          "writer_tgid": 4602,
+          "writer_comm": "tee",
+          "reader_tgid": 4603,
+          "reader_comm": "curl",
+          "inode": "9007199254740995",
+          "kind": "file",
+          "path": "/tmp/sg-demo-copy"
+        }
+      ]
+    }
+  },
+  {
+    "at": 58,
+    "event": {
+      "v": 1,
+      "ts": 1058,
+      "type": "UNTAG",
+      "hook": "exit",
+      "tgid": 4603,
+      "parent_tgid": null,
+      "comm": "curl",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 58,
+    "event": {
+      "v": 1,
+      "ts": 1058,
+      "type": "UNTAG",
+      "hook": "exit",
+      "tgid": 4602,
+      "parent_tgid": null,
+      "comm": "tee",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 58,
+    "event": {
+      "v": 1,
+      "ts": 1058,
+      "type": "UNTAG",
+      "hook": "exit",
+      "tgid": 4601,
+      "parent_tgid": null,
+      "comm": "cat",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  }
+]

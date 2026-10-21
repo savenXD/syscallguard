@@ -1,0 +1,604 @@
+[
+  {
+    "at": 0,
+    "event": {
+      "v": 1,
+      "ts": 1000,
+      "type": "READY",
+      "hook": null,
+      "tgid": null,
+      "parent_tgid": null,
+      "comm": null,
+      "file": null,
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce",
+      "protect": [
+        "/home/demo/syscallguard/demo/project/.env"
+      ],
+      "allow": [
+        "127.0.0.0/8",
+        "::1/128"
+      ]
+    }
+  },
+  {
+    "at": 1,
+    "event": {
+      "v": 1,
+      "ts": 1001,
+      "type": "TAG",
+      "hook": "file_open",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 1.2,
+    "event": {
+      "v": 1,
+      "ts": 1001.2,
+      "type": "TAG_INHERIT",
+      "hook": "fork",
+      "tgid": 4422,
+      "parent_tgid": 4421,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 3.0,
+    "event": {
+      "v": 1,
+      "ts": 1003.0,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 4.8,
+    "event": {
+      "v": 1,
+      "ts": 1004.8,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.2",
+      "dport": 8443,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 6.6,
+    "event": {
+      "v": 1,
+      "ts": 1006.6,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.3",
+      "dport": 9000,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 8.4,
+    "event": {
+      "v": 1,
+      "ts": 1008.4,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 10.2,
+    "event": {
+      "v": 1,
+      "ts": 1010.2,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.2",
+      "dport": 8443,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 12.0,
+    "event": {
+      "v": 1,
+      "ts": 1012.0,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.3",
+      "dport": 9000,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 13.8,
+    "event": {
+      "v": 1,
+      "ts": 1013.8,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 15.6,
+    "event": {
+      "v": 1,
+      "ts": 1015.6,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.2",
+      "dport": 8443,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 17.4,
+    "event": {
+      "v": 1,
+      "ts": 1017.4,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.3",
+      "dport": 9000,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 19.2,
+    "event": {
+      "v": 1,
+      "ts": 1019.2,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 21.0,
+    "event": {
+      "v": 1,
+      "ts": 1021.0,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.2",
+      "dport": 8443,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 22.8,
+    "event": {
+      "v": 1,
+      "ts": 1022.8,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.3",
+      "dport": 9000,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 24.6,
+    "event": {
+      "v": 1,
+      "ts": 1024.6,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 26.4,
+    "event": {
+      "v": 1,
+      "ts": 1026.4,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.2",
+      "dport": 8443,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 28.2,
+    "event": {
+      "v": 1,
+      "ts": 1028.2,
+      "type": "BLOCK",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "192.168.122.1",
+      "dport": 9999,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 30.0,
+    "event": {
+      "v": 1,
+      "ts": 1030.0,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 31.8,
+    "event": {
+      "v": 1,
+      "ts": 1031.8,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.2",
+      "dport": 8443,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 33.6,
+    "event": {
+      "v": 1,
+      "ts": 1033.6,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.3",
+      "dport": 9000,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 35.4,
+    "event": {
+      "v": 1,
+      "ts": 1035.4,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 37.2,
+    "event": {
+      "v": 1,
+      "ts": 1037.2,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.2",
+      "dport": 8443,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 39.0,
+    "event": {
+      "v": 1,
+      "ts": 1039.0,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.3",
+      "dport": 9000,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 40.8,
+    "event": {
+      "v": 1,
+      "ts": 1040.8,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 42.6,
+    "event": {
+      "v": 1,
+      "ts": 1042.6,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.2",
+      "dport": 8443,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 44.4,
+    "event": {
+      "v": 1,
+      "ts": 1044.4,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.3",
+      "dport": 9000,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 46.2,
+    "event": {
+      "v": 1,
+      "ts": 1046.2,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 48.0,
+    "event": {
+      "v": 1,
+      "ts": 1048.0,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.2",
+      "dport": 8443,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 49.8,
+    "event": {
+      "v": 1,
+      "ts": 1049.8,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.3",
+      "dport": 9000,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 51.6,
+    "event": {
+      "v": 1,
+      "ts": 1051.6,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.1",
+      "dport": 8080,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 53.4,
+    "event": {
+      "v": 1,
+      "ts": 1053.4,
+      "type": "ALLOW",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "127.0.0.2",
+      "dport": 8443,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 55.2,
+    "event": {
+      "v": 1,
+      "ts": 1055.2,
+      "type": "BLOCK",
+      "hook": "connect",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": "ipv4",
+      "daddr": "192.168.122.1",
+      "dport": 9999,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 59,
+    "event": {
+      "v": 1,
+      "ts": 1059,
+      "type": "UNTAG",
+      "hook": "exit",
+      "tgid": 4422,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  },
+  {
+    "at": 59,
+    "event": {
+      "v": 1,
+      "ts": 1059,
+      "type": "UNTAG",
+      "hook": "exit",
+      "tgid": 4421,
+      "parent_tgid": null,
+      "comm": "python3",
+      "file": "/home/demo/syscallguard/demo/project/.env",
+      "family": null,
+      "daddr": null,
+      "dport": null,
+      "mode": "enforce"
+    }
+  }
+]
