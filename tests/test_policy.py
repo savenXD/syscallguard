@@ -28,6 +28,7 @@ def _load_policy_module():
     """Import guard/policy.py by path, so the tests do not depend on the cwd."""
     spec = importlib.util.spec_from_file_location("guard_policy_under_test", POLICY_PATH)
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module 
     spec.loader.exec_module(module)
     return module
 
@@ -132,6 +133,14 @@ class TestValidPolicies(PolicyTestCase):
     def test_mode_override_enforce_over_enforce_file(self):
         path = self.write_policy(mode="enforce")
         self.assertEqual(load_policy(path, mode_override="audit").mode, "audit")
+    
+    def test_bare_host_address_means_single_host(self):
+        loaded = load_policy(self.write_policy(allow=("10.0.0.5",)))
+        self.assertEqual(loaded.allow_v4, [ipaddress.ip_network("10.0.0.5/32")])
+
+    def test_enforce_mode_in_file_is_kept(self):
+        loaded = load_policy(self.write_policy(mode="enforce"))
+        self.assertEqual(loaded.mode, "enforce")
 
 
 class TestInvalidPolicies(PolicyTestCase):
