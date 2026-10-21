@@ -109,8 +109,8 @@ The full JSON field table is in ARCHITECTURE.md, Contract 3. Divyanshu's decoder
 - [ ] **M1 Tagging** (K + G, 18–19 Oct): Guard starts in audit mode and prints `READY`; `cat demo/project/.env` → `TAG` event for `cat`; `sudo bpftool map dump name tagged` shows the entry
 - [ ] **M3 Connect enforcement** (K + G, 19 Oct): Enforce mode: tagged `agent.py --exfil direct` → `PermissionError` + `BLOCK`; its POST to 127.0.0.1:8080 succeeds with `ALLOW`; an untagged `python3 -c` connect to the attacker succeeds; audit mode → all succeed + `WOULD_BLOCK`
 
-**Start now:** `policy.py` and its validation can be written and tested on any machine, no VM. The CLI, `READY` emission and signal handling too.
-**Blocked by:** Azaan's map declarations for real loading (agree Contract 1 first); Divyanshu's `decode_event` for event output (you can stub with `None` until it lands).
+**Start now:** `policy.py` and its validation are **done** (see section 10): parsing, validation and the CLI are implemented and tested on any machine, no VM needed. Next is `guard/guard.py` -- CLI, BPF load, map population, `READY` emission, poll loop and signal handling. Use Azaan's 2026-10-19 correction when loading: `cflags=["-I" + <abs path to guard/bpf>, "-fms-extensions"]`.
+**Blocked by:** Contract 1 is agreed and Azaan's maps are already in `guard/bpf/syscallguard.bpf.c` (`protected_inodes`, `allow_v4`, `allow_v6`, `config` from section 5, plus Azaan's `tagged` and the `events` ring buffer), together with hook A (file_open tagging), fork/exit inheritance and hook B (socket_connect). Still outstanding: **hook C** (`socket_sendmsg`) exists only as a comment in the `.bpf.c` and is needed for M3's `ALLOW` event on the POST to 127.0.0.1:8080; and **Divyanshu's `guard/events.py`** is still a TODO stub with no `decode_event`, which the poll loop needs (stub it with `None` until it lands).
 **You block:** Azaan (your loader is how his hooks get tested), Divyanshu's bridge real mode (M5 real), Suyash's attack matrix (M6).
 
 ## 7. How to run and test your part
@@ -168,7 +168,19 @@ Start-here prompt to paste to an agent:
 
 None open. Resolved 18 Oct (see docs/shared.md): exit codes 0/2/3, `ERROR` on load failure, `--debug` is stderr-only, `comm` is `null` on `READY`/`ERROR`, you own `tests/test_policy.py`, S2 belongs to Track K.
 
+**Applied 20 Oct (Azaan, Contract 2 clarifications).** All three are implemented in `guard/policy.py`, each with a test in `tests/test_policy.py`:
+- a missing `allow` key is treated as empty, not an error;
+- a missing `protect` key is rejected, same as an empty one;
+- `allow` entries must be strings; a non-string entry is rejected (an integer like `5` would otherwise silently become `0.0.0.5/32`).
+
+**Open:**
+- Should a valid CLI `--mode` override accept a policy file whose `mode` value is invalid? Contract 2 says "validate that `mode` is audit or enforce" and "a CLI `--mode` flag overrides the file", but does not say which wins when the file's value is invalid. Current behaviour: the file is validated first, so an invalid file `mode` is rejected even when `--mode` supplies a valid value. **Behaviour deliberately left unchanged.** If the team decides otherwise it is a behaviour change and needs a `contract:` entry in `docs/shared.md`.
+
 ## 10. Work log
 
 - 2026-10-18: file created. Bootstrap only; `guard.py` and `policy.py` are stubs.
 - 2026-10-18: docs updated with team decisions (TAG_INHERIT name not asserted, hook C emits no ALLOW, native IPv6 dropped, open questions resolved). See docs/shared.md.
+- 2026-10-21: Contract 2 policy parsing/validation implemented in `guard/policy.py` (stdlib only, imports no `bcc`): `mode` in {audit, enforce} with missing -> `audit`; `protect` absolute, existing and non-empty, resolved with `os.stat` (follows symlinks, keeps `st_ino`); `allow` parsed with `ipaddress.ip_network(entry, strict=False)` and split into IPv4/IPv6; unknown keys rejected; map-size limits not checked; `--mode` overrides the file; errors print one clear message to stderr and exit 2. `load_policy` raises `PolicyError` instead of exiting, so the CLI owns the exit code.
+- 2026-10-21: `tests/test_policy.py` = **31 tests, all passing, 1 skipped**. The skip is `test_symlink_resolves_to_target_inode`: on Windows creating a symlink needs the `SeCreateSymbolicLink` privilege (or Developer Mode), so it is skipped here and must be re-run on Linux in the VM. The companion test proving `os.stat` is used instead of `os.lstat` does pass on Windows.
+- 2026-10-21: all three 20 Oct Contract 2 clarifications implemented and tested (missing `allow` -> empty, missing `protect` -> rejected, non-string `allow` entry rejected). One open question recorded in section 9: whether a valid `--mode` override should accept a file with an invalid `mode`. No behaviour changed.
+- 2026-10-21: `guard.py` not started yet (Phase 2, pending approval). Milestone boxes M1 and M3 stay unticked: policy validation is only a prerequisite, M1 still needs the guard to start in audit mode, print `READY` and tag `cat demo/project/.env` in the VM.
