@@ -1,0 +1,87 @@
+{
+  "scope": "mock dashboard rehearsal only",
+  "cold_vm_runs": false,
+  "runs": [
+    {
+      "run": 1,
+      "source": "mock",
+      "kernel_enforcement_tested": false,
+      "attacker_bytes": null,
+      "cases": [
+        {
+          "vector": "direct",
+          "hook": "connect",
+          "banner_seconds_from_bridge_receipt": 0.7611
+        },
+        {
+          "vector": "curl",
+          "hook": "connect",
+          "banner_seconds_from_bridge_receipt": 0.7443
+        },
+        {
+          "vector": "udp",
+          "hook": "sendmsg",
+          "banner_seconds_from_bridge_receipt": 0.6749
+        }
+      ],
+      "electron_restart_snapshot_pids": [
+        4421
+      ],
+      "passed": true
+    },
+    {
+      "run": 2,
+      "source": "mock",
+      "kernel_enforcement_tested": false,
+      "attacker_bytes": null,
+      "cases": [
+        {
+          "vector": "direct",
+          "hook": "connect",
+          "banner_seconds_from_bridge_receipt": 0.6569
+        },
+        {
+          "vector": "curl",
+          "hook": "connect",
+          "banner_seconds_from_bridge_receipt": 0.6706
+        },
+        {
+          "vector": "udp",
+          "hook": "sendmsg",
+          "banner_seconds_from_bridge_receipt": 0.6883
+        }
+      ],
+      "electron_restart_snapshot_pids": [
+        4421
+      ],
+      "passed": true
+    },
+    {
+      "run": 3,
+      "source": "mock",
+      "kernel_enforcement_tested": false,
+      "attacker_bytes": null,
+      "cases": [
+        {
+          "vector": "direct",
+          "hook": "connect",
+          "banner_seconds_from_bridge_receipt": 0.6712
+        },
+        {
+          "vector": "curl",
+          "hook": "connect",
+          "banner_seconds_from_bridge_receipt": 0.6873
+        },
+        {
+          "vector": "udp",
+          "hook": "sendmsg",
+          "banner_seconds_from_bridge_receipt": 0.6896
+        }
+      ],
+      "electron_restart_snapshot_pids": [
+        4421
+      ],
+      "passed": true
+    }
+  ]
+}

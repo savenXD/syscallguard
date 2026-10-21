@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ws: wss:; img-src 'self' data:; font-src 'self' data:;"
+    />
+    <meta name="theme-color" content="#080808" />
+    <link rel="icon" type="image/svg+xml" href="./branding/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./branding/favicon-32x32.png" />
+    <link rel="icon" type="image/x-icon" href="./branding/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./branding/apple-touch-icon.png" />
+    <title>SyscallGuard</title>
+  </head>
+  <body class="bg-[#060607] text-zinc-100 font-sans antialiased overflow-x-hidden selection:bg-white/20 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

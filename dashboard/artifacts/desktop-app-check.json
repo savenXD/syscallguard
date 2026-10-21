@@ -1,0 +1,30 @@
+{
+  "title": "SyscallGuard",
+  "bridge": "ws://127.0.0.1:45707",
+  "demo": true,
+  "packagedLogo": "file:///tmp/.mount_SyscalPUovvL/resources/app.asar/renderer/logo.svg",
+  "logoLoaded": true,
+  "fonts": "loaded",
+  "images": [
+    {
+      "href": "file:///tmp/.mount_SyscalPUovvL/resources/app.asar/renderer/branding/favicon.svg",
+      "loaded": true
+    },
+    {
+      "href": "file:///tmp/.mount_SyscalPUovvL/resources/app.asar/renderer/branding/favicon-32x32.png",
+      "loaded": true
+    },
+    {
+      "href": "file:///tmp/.mount_SyscalPUovvL/resources/app.asar/renderer/branding/favicon.ico",
+      "loaded": true
+    },
+    {
+      "href": "file:///tmp/.mount_SyscalPUovvL/resources/app.asar/renderer/branding/apple-touch-icon.png",
+      "loaded": true
+    }
+  ],
+  "rows": 30,
+  "width": 1024,
+  "scrollWidth": 1018,
+  "consoleErrors": []
+}

@@ -113,3 +113,15 @@ Template:
 **Who is affected:** Hifza (`guard/policy.py` and `test_policy.py`).
 **Action required:** Hifza, check that `policy.py` does all three; the string check on `allow` entries is the one most likely to be missing. Add a test for each.
 **Commit:** contract: clarify Contract 2 edge cases (missing/empty keys, allow entry types)
+
+### 2026-10-20 · Devansh (track U) · path
+**What changed:** Dashboard-only mock rehearsal and proposed stretch payload handoff are documented in `dashboard/docs/phase4-demo.md` and `dashboard/docs/stretch-demo-protocol.md`. `dashboard/mock_bridge.py --scenario stage|stretch|all` labels its SNAPSHOT as mock; S1/S2 prototype payloads are accepted only in that mock context. Actual ARCHITECTURE.md Contracts 1–4 are unchanged.
+**Who is affected:** Azaan (future S1/S2 kernel output), Divyanshu (future decoder/bridge provenance and snapshots), Suyash (rehearsal/video).
+**Action required:** Informational for now. Before real integration, K/G must agree actual raw-socket and taint event/snapshot metadata and update the shared contracts; the mock payload document is a proposal, not an implemented kernel interface. The recorded video is labelled mock and is not enforcement evidence.
+**Commit:** uncommitted working-tree changes (dashboard demo preparation)
+
+### 2026-10-20 · Devansh (track U) · path
+**What changed:** Added `dashboard/README.md` desktop run instructions, `dashboard/branding/` editable logo sources, generated native/browser icons, and Linux AppImage/unpacked outputs under gitignored `dashboard/release/`. `npm run demo` uses an embedded loopback mock feed and needs no Python terminal. Packaged apps default to visibly labelled demo mode unless `--bridge=`, `SG_BRIDGE_URL`, or `--live` selects the real feed; source `npm start` retains its real localhost default.
+**Who is affected:** Divyanshu (real bridge integration), Suyash (stage launches and fallback distribution), Devansh (branding and releases).
+**Action required:** Use an explicit VM bridge address for real packaged demonstrations. `npm run demo -- --kiosk` is the self-contained mock rehearsal command. Existing guard/bridge contracts and other tracks' implementation files are unchanged.
+**Commit:** uncommitted working-tree changes (desktop branding and packaging)

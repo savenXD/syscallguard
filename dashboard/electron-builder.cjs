@@ -1,0 +1,17 @@
+module.exports = {
+  appId: 'io.syscallguard.desktop',
+  productName: 'SyscallGuard',
+  executableName: 'syscallguard',
+  copyright: 'SyscallGuard · INNOTECH26',
+  directories: { output: 'release', buildResources: 'build' },
+  electronDist: 'node_modules/electron/dist',
+  electronVersion: require('electron/package.json').version,
+  asar: true,
+  npmRebuild: false,
+  files: ['main.js', 'preload.js', 'desktop/**', 'demo/story.json', 'renderer/**', 'build/icons/icon.png', 'package.json'],
+  artifactName: 'SyscallGuard-${version}-${arch}.${ext}',
+  linux: { syncDesktopName: true, target: ['AppImage'], icon: 'build/icons', category: 'System',
+    desktop: { entry: { Name: 'SyscallGuard', Comment: 'Kernel security operations dashboard', StartupWMClass: 'syscallguard' } } },
+  win: { target: 'nsis', icon: 'build/icons/icon.ico' },
+  mac: { target: 'dmg', icon: 'build/icons/icon.icns', category: 'public.app-category.developer-tools' },
+};

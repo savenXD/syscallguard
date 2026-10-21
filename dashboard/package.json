@@ -2,12 +2,50 @@
   "name": "syscallguard-dashboard",
   "version": "0.1.0",
   "private": true,
-  "description": "SyscallGuard live dashboard (Electron)",
+  "description": "SyscallGuard kernel security operations desktop app",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "dev": "vite",
+    "build": "tsc && vite build && node scripts/browser-build.cjs",
+    "preview": "vite preview",
+    "mock": "python3 mock_bridge.py",
+    "start": "npm run build && electron .",
+    "test": "node --test tests/*.test.cjs",
+    "demo": "npm run build && electron . --demo",
+    "branding": "node scripts/build-branding.cjs",
+    "package:dir": "npm run build && electron-builder --config electron-builder.cjs --dir",
+    "package:linux": "npm run build && electron-builder --config electron-builder.cjs --linux --publish never"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.11.17",
+    "lenis": "^1.3.27",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.4",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
-    "electron": "^44.9.0"
-  }
+    "@types/node": "^20.17.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3",
+    "postcss": "^8.4.49",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  },
+  "productName": "SyscallGuard",
+  "author": "SyscallGuard Team",
+  "license": "UNLICENSED",
+  "desktopName": "syscallguard.desktop"
 }

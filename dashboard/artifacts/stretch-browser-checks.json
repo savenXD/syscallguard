@@ -1,0 +1,81 @@
+{
+  "source": "mock",
+  "production_contract_changed": false,
+  "layouts": [
+    {
+      "display": [
+        1920,
+        1080
+      ],
+      "scale": 1,
+      "width": 1920,
+      "scrollWidth": 1914,
+      "overflow": []
+    },
+    {
+      "display": [
+        1920,
+        1080
+      ],
+      "scale": 1.25,
+      "width": 1536,
+      "scrollWidth": 1530,
+      "overflow": []
+    },
+    {
+      "display": [
+        1920,
+        1080
+      ],
+      "scale": 1.5,
+      "width": 1280,
+      "scrollWidth": 1274,
+      "overflow": []
+    },
+    {
+      "display": [
+        1440,
+        900
+      ],
+      "scale": 1,
+      "width": 1440,
+      "scrollWidth": 1434,
+      "overflow": []
+    },
+    {
+      "display": [
+        1440,
+        900
+      ],
+      "scale": 1.25,
+      "width": 1152,
+      "scrollWidth": 1146,
+      "overflow": []
+    },
+    {
+      "display": [
+        1440,
+        900
+      ],
+      "scale": 1.5,
+      "width": 960,
+      "scrollWidth": 954,
+      "overflow": []
+    },
+    {
+      "display": [
+        1100,
+        900
+      ],
+      "scale": 1,
+      "width": 1100,
+      "scrollWidth": 1094,
+      "overflow": []
+    }
+  ],
+  "raw_socket_banner": true,
+  "writer_pid_filter_includes_reader": true,
+  "incident_copy": true,
+  "lineage_restored_from_snapshot": true,
+  "console_errors": []
+}
