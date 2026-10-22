@@ -10,24 +10,24 @@ guard's OWN JSON events:
     audit:   TAG + WOULD_BLOCK (+ ALLOW)
     curl:    TAG_INHERIT for the curl child (fork inheritance proof)
 
-The exfil target is a dummy TCP listener on this box's LAN IP
-(non-loopback, so never allowlisted): preconnect NEEDS a connect() that
-succeeds while untagged, which a blackhole address can't provide, and a
-real listener keeps audit-mode TCP cells fast (no SYN timeouts).
+The exfil target is --target (default 192.168.122.1:9999): the real
+attacker.py on the host, which must be running. Its window must show 0 bytes
+from the tagged cells in enforce mode. An untagged control connect per policy
+mode must SUCCEED (proves it's not a firewall). udp and preconnect need hook C
+(socket_sendmsg); until it lands they leak and are reported as XFAIL.
 
 The matrix parent NEVER reads the secret itself, so it never gets tagged;
 every agent run is a fresh, cleanly-tagged process — no manual fresh
 terminals needed.
 
 Usage:
-    sudo python3 tests/attack_matrix.py            # full 12-cell matrix
-    sudo python3 tests/attack_matrix.py --quick    # enforce only (6 cells)
+    sudo python3 tests/attack_matrix.py [--target 192.168.122.1:9999]   # audit + enforce
+    sudo python3 tests/attack_matrix.py --quick                          # enforce only
 """
 
 import argparse
 import json
 import os
-import socket
 import subprocess
 import sys
 import tempfile
@@ -36,13 +36,14 @@ import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API_PORT = 18081
-ATTACKER_PORT = 9999
 READY_TIMEOUT = 90        # first bcc compile can be slow
 DRAIN_AFTER_AGENT = 4
 
 AGENT_MODES = ("direct", "curl", "udp", "b64", "preconnect", "ipv6")
 # modes whose verdict must arrive via the sendmsg hook (their raison d'etre)
 SENDMSG_MODES = ("udp", "preconnect")
+# Expected to leak until hook C (socket_sendmsg) lands: failures there are XFAIL, not FAIL.
+HOOK_C_MODES = SENDMSG_MODES
 
 
 class Guard:
@@ -88,53 +89,21 @@ class Guard:
                 if e.get("tgid") == tgid or e.get("parent_tgid") == tgid]
 
 
-def lan_ip():
-    """Primary non-loopback IPv4, via a UDP route lookup (sends nothing)."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-    except OSError:
-        return None
-    finally:
-        s.close()
-    return None if ip.startswith("127.") else ip
-
-
-class Attacker:
-    """Dummy exfil receiver on the LAN IP. Accepts and drains TCP; the
-    point is to be REACHABLE (preconnect's first connect must succeed
-    while the agent is still untagged). Untagged itself, so silent."""
-
-    def __init__(self, ip, port=ATTACKER_PORT):
-        self._srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._srv.bind((ip, port))
-        self._srv.listen(16)
-        self._srv.settimeout(0.5)
-        self._stop = threading.Event()
-        self._thread = threading.Thread(target=self._run, daemon=True)
-        self._thread.start()
-
-    def _run(self):
-        while not self._stop.is_set():
-            try:
-                c, _ = self._srv.accept()
-            except (socket.timeout, OSError):
-                continue
-            try:
-                c.settimeout(2)
-                while c.recv(65536):
-                    pass
-            except OSError:
-                pass
-            finally:
-                c.close()
-
-    def close(self):
-        self._stop.set()
-        self._thread.join(timeout=5)
-        self._srv.close()
+def untagged_control(guard, host, port):
+    """An untagged process must reach the target: proves it's not a firewall."""
+    guard.events.clear()
+    code = (f"import socket; socket.create_connection(({host!r}, {port}), timeout=5)"
+            ".sendall(b'untagged-control')")
+    p = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=20)
+    time.sleep(1)
+    verdicts = [e for e in guard.events
+                if e.get("type") in ("BLOCK", "WOULD_BLOCK") and e.get("daddr") == host]
+    notes = []
+    if p.returncode != 0:
+        notes.append(f"connect failed: {p.stderr.strip().splitlines()[-1] if p.stderr.strip() else p.returncode}")
+    if verdicts:
+        notes.append(f"guard emitted {verdicts[0].get('type')} for an untagged process")
+    return not notes, notes
 
 
 def write_secret(tmp):
@@ -162,8 +131,14 @@ def write_policy(tmp, mode, secret):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="SyscallGuard attack matrix")
     ap.add_argument("--quick", action="store_true",
-                    help="enforce mode only (6 cells)")
+                    help="enforce mode only")
+    ap.add_argument("--target", default="192.168.122.1:9999", metavar="HOST:PORT",
+                    help="exfil destination: the host's attacker.py (default 192.168.122.1:9999)")
     args = ap.parse_args(argv)
+    attacker_ip, _, port = args.target.rpartition(":")
+    if not attacker_ip or not port.isdigit():
+        ap.error("--target must be HOST:PORT")
+    attacker_port = int(port)
 
     if os.geteuid() != 0:
         print("FAIL: must run as root: sudo python3 tests/attack_matrix.py",
@@ -173,14 +148,7 @@ def main(argv=None):
     modes = ["enforce"] if args.quick else ["audit", "enforce"]
     results = []  # (policy_mode, agent_mode, ok|None, notes)
 
-    attacker_ip = lan_ip()
-    attacker = None
-    if attacker_ip:
-        print(f"attacker target: {attacker_ip}:{ATTACKER_PORT} (test listener)")
-        attacker = Attacker(attacker_ip)
-    else:
-        print("WARN: no non-loopback IP found; preconnect cells will be skipped")
-        attacker_ip = "192.0.2.1"  # TEST-NET-1 fallback for the other modes
+    print(f"attacker target: {attacker_ip}:{attacker_port} (attacker.py on the host must be running)")
 
     tmp = tempfile.mkdtemp(prefix="sg_matrix_")
     secret = write_secret(tmp)  # before any guard exists; never touched again
@@ -199,17 +167,17 @@ def main(argv=None):
                 guard.stop()
                 return 1
             print(f"== policy mode: {pmode} ==")
+            ok, notes = untagged_control(guard, attacker_ip, attacker_port)
+            print(f"  [{'PASS' if ok else 'FAIL'}] untagged control (must connect)"
+                  + ("" if ok else f"  <-- {'; '.join(notes)}"))
+            results.append((pmode, "untagged-control", ok, notes))
 
             for amode in AGENT_MODES:
-                if amode == "preconnect" and attacker is None:
-                    print("  [SKIP] preconnect  (needs a reachable attacker)")
-                    results.append((pmode, amode, None, ["skipped"]))
-                    continue
                 guard.events.clear()
                 agent = subprocess.Popen(
                     [sys.executable, os.path.join(REPO, "demo", "agent.py"),
                      "--mode", amode, "--env", secret,
-                     "--attacker", attacker_ip, "--port", str(ATTACKER_PORT),
+                     "--attacker", attacker_ip, "--port", str(attacker_port),
                      "--api", f"http://127.0.0.1:{API_PORT}"],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                     text=True)
@@ -261,11 +229,13 @@ def main(argv=None):
                 if pmode == "enforce" and amode != "curl":
                     need("agent reported BLOCKED",
                          "BLOCKED by the guard" in stdout)
-                status = "PASS" if ok else "FAIL"
+                xfail = not ok and amode in HOOK_C_MODES
+                status = "PASS" if ok else ("XFAIL" if xfail else "FAIL")
                 print(f"  [{status}] {amode:10s} "
                       f"{' '.join(sorted(by_type))}"
-                      + ("" if ok else f"  <-- {'; '.join(notes)}"))
-                if not ok:
+                      + ("" if ok else f"  <-- {'; '.join(notes)}")
+                      + ("  (expected to leak until hook C)" if xfail else ""))
+                if not ok and not xfail:
                     for line in stdout.strip().split("\n")[-5:]:
                         print(f"      | {line}")
                     # diagnostic: dump every event seen this cell, plus any
@@ -278,17 +248,18 @@ def main(argv=None):
                             print(f"      # {m} {e.get('type')} hook={e.get('hook')} "
                                   f"tgid={e.get('tgid')} parent={e.get('parent_tgid')} "
                                   f"daddr={e.get('daddr')}:{e.get('dport')}")
-                results.append((pmode, amode, ok, notes))
+                results.append((pmode, amode, None if xfail else ok,
+                                ["expected to leak until hook C"] if xfail else notes))
 
             guard.stop()
     finally:
         api.terminate()
-        if attacker:
-            attacker.close()
 
     ran = [r for r in results if r[2] is not None]
     passed = sum(1 for _, _, ok, _ in ran if ok)
-    print(f"== {passed}/{len(ran)} cells passed ==")
+    xfails = [r for r in results if r[2] is None]
+    print(f"== {passed}/{len(ran)} cells passed"
+          + (f", {len(xfails)} XFAIL (udp/preconnect leak until hook C)" if xfails else "") + " ==")
     for pmode, amode, ok, notes in results:
         if ok is False:
             print(f"  FAIL {pmode}/{amode}: {'; '.join(notes)}")
