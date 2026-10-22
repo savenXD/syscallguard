@@ -29,8 +29,10 @@ pkill -f "demo/internal_api.py" 2>/dev/null && sleep 0.5
 nohup python3 demo/internal_api.py >/tmp/internal_api.log 2>&1 &
 echo "  internal_api.py restarted (pid $!, log /tmp/internal_api.log)"
 
-# 3. The guard's hooks should still be attached.
-if sudo bpftool prog list 2>/dev/null | grep -q lsm__file_open; then
+# 3. The guard's hooks should still be attached. sudo -n never prompts for a password.
+if ! sudo -n true 2>/dev/null; then
+    echo "  hook check skipped (sudo would prompt)"
+elif sudo -n bpftool prog list 2>/dev/null | grep -q lsm__file_open; then
     echo "  guard hooks attached (lsm__file_open loaded)"
 else
     echo "  WARNING: lsm__file_open is not loaded: the guard is NOT running."
