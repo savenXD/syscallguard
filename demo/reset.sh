@@ -6,62 +6,35 @@
 #   - restart internal_api.py
 #   - clear the screen
 #!/usr/bin/env bash
-# reset.sh — clean the demo stage between runs.
+# reset.sh — clean the demo stage between judges (run in the VM).
 #
-# Run BEFORE each demo run, in the terminal you will demo from:
 #     bash demo/reset.sh
 #
-# Kills leftover demo processes and removes temp artifacts. What it CANNOT
-# do is untag your current shell: taint is hereditary via fork, so if this
-# shell (or any ancestor) ever opened the protected .env, every child it
-# spawns is born tagged. If a run looks wrong, open a FRESH terminal.
+# Leaves the guard | bridge pipeline, the attacker and the dashboard running:
+# killing the bridge would take the guard's stdout away mid-demo. Kills only
+# leftover agent.py and curl processes, then restarts internal_api.py.
+# It cannot untag your shell: if this shell ever opened the protected .env,
+# its children are born tagged. Use a fresh terminal for a clean run.
 set -uo pipefail
+cd "$(dirname "$0")/.."
 
 echo "== SyscallGuard demo reset =="
 
-# 1. Kill leftover demo processes, by script path (never by port — ports
-#    can be reused by unrelated programs).
-#
-#    The SERVERS (internal_api, attacker) never exit on their own: they
-#    listen forever, so a second run would crash with "address already in
-#    use" if we didn't kill them. The guard/bridge are long-running too.
-#    agent.py normally exits by itself after each mode — killing it is just
-#    insurance against a stuck run (e.g. a hung curl child) contaminating
-#    the next demo with stale tagged processes.
-for pat in "guard/guard.py" "bridge/bridge.py" "demo/agent.py" \
-           "demo/internal_api.py" "demo/attacker.py" \
-           "scripts/lsm_smoke_test.py"; do
-    if pkill -f "$pat" 2>/dev/null; then
-        echo "  killed: $pat"
-    fi
-done
-# Electron dashboard, if started from this repo (its window title carries
-# the app name).
-if pkill -f "syscallguard-dashboard" 2>/dev/null; then
-    echo "  killed: dashboard"
-fi
+# 1. Leftover agent runs (a hung curl child would carry a stale tag).
+pkill -f "demo/agent.py" 2>/dev/null && echo "  killed: demo/agent.py"
+pkill -x curl 2>/dev/null && echo "  killed: curl"
 
-# 2. BPF programs detach THEMSELVES: when the loader (guard.py) dies, the
-#    kernel closes its file descriptors and unlinks the LSM hooks. There is
-#    nothing to unload by hand. Best-effort check that nothing of ours is
-#    still attached:
-if command -v bpftool >/dev/null 2>&1; then
-    if bpftool prog show 2>/dev/null | grep -qi "syscallguard"; then
-        echo "  WARNING: a syscallguard BPF program still shows in bpftool;"
-        echo "           its loader may still be alive — check ps."
-    else
-        echo "  no syscallguard BPF programs attached"
-    fi
+# 2. Restart the internal API so the agent's allowed POST works on the next run.
+pkill -f "demo/internal_api.py" 2>/dev/null && sleep 0.5
+nohup python3 demo/internal_api.py >/tmp/internal_api.log 2>&1 &
+echo "  internal_api.py restarted (pid $!, log /tmp/internal_api.log)"
+
+# 3. The guard's hooks should still be attached.
+if sudo bpftool prog list 2>/dev/null | grep -q lsm__file_open; then
+    echo "  guard hooks attached (lsm__file_open loaded)"
 else
-    echo "  (bpftool not installed — skipping attach check)"
+    echo "  WARNING: lsm__file_open is not loaded: the guard is NOT running."
+    echo "           Restart the whole guard | bridge pipeline before the next judge."
 fi
 
-# 3. Temp artifacts from smoke tests and demo runs.
-rm -f /tmp/sg_smoke_secret /tmp/sg_demo_*.log /tmp/agent_exfil_*.tmp
-echo "  temp files cleaned"
-
-echo
-echo "  NOTE: taint is hereditary via fork — this script cannot untag"
-echo "  your shell. For a clean run, use a terminal that has never"
-echo "  opened the protected file."
 echo "== reset done =="
