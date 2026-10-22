@@ -28,7 +28,7 @@ Modes (each defeats a naive defense; the guard must stop all of them):
   ipv6        ::ffff:<attacker> v4-mapped IPv6    (address normalization)
 
 Run on the PROTECTED box (unprivileged, one-shot per mode):
-    python3 demo/agent.py --mode direct [--attacker <lan-ip>] [--port 9999]
+    python3 demo/agent.py --mode direct [--attacker <host-ip>] [--port 9999]
 (--attacker is auto-detected from the default gateway when omitted, so a
 DHCP reassignment can never leave it pointing at a stale address.)
 
@@ -53,14 +53,12 @@ DEFAULT_ENV = os.path.join(REPO, "demo", "project", ".env")
 MODES = ("direct", "curl", "udp", "b64", "preconnect", "ipv6")
 
 
-def detect_lan_ip():
-    """This box's primary non-loopback IPv4, discovered locally.
+def default_gateway():
+    """The default-route gateway, read from /proc/net/route.
 
-    Reads the default gateway from /proc/net/route, then asks the kernel
-    (over a UDP socket that sends nothing) which source address it would
-    use to reach it. No hardcoded addresses and no internet needed, so a
-    DHCP reassignment is picked up on every run. Returns None when there
-    is no usable route (e.g. WiFi down).
+    In the demo VM that is the libvirt host (usually 192.168.122.1), where
+    attacker.py listens. Re-read on every run, so a DHCP change can't leave
+    it stale. Returns None when there is no default route.
     """
     gw = None
     try:
@@ -74,17 +72,7 @@ def detect_lan_ip():
                     break
     except OSError:
         return None
-    if not gw:
-        return None
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect((gw, 80))  # UDP connect: no packets leave the box
-        ip = s.getsockname()[0]
-    except OSError:
-        return None
-    finally:
-        s.close()
-    return None if ip.startswith("127.") else ip
+    return gw
 
 
 def log(msg):
@@ -202,18 +190,18 @@ def main(argv=None):
                     help="exfiltration technique to attempt")
     ap.add_argument("--env", default=DEFAULT_ENV, help="path to the .env file")
     ap.add_argument("--attacker", default=None,
-                    help="exfil destination (default: auto-detected LAN IP, "
-                         "re-detected every run so DHCP changes can't go stale)")
+                    help="exfil destination (default: the default-route gateway, "
+                         "i.e. the libvirt host, re-read every run)")
     ap.add_argument("--port", type=int, default=9999)
     ap.add_argument("--api", default="http://127.0.0.1:8080",
                     help="internal API base URL")
     args = ap.parse_args(argv)
     if not args.attacker:
-        args.attacker = detect_lan_ip()
+        args.attacker = default_gateway()
         if not args.attacker:
-            ap.error("could not auto-detect a LAN IP (no network route?) — "
+            ap.error("no default route to take the gateway from — "
                      "pass --attacker explicitly")
-        log(f"auto-detected attacker address: {args.attacker}")
+        log(f"attacker defaults to the gateway: {args.attacker}")
     if args.attacker.startswith("127."):
         ap.error("--attacker must not be loopback (127.0.0.0/8 is allowlisted "
                  "— exfil there would succeed even in enforce mode)")
