@@ -197,7 +197,7 @@ The rules every AI agent and developer follows. Must include:
 - eBPF programs in restricted C, compiled and loaded at runtime by **bcc** from **Python 3**.
 - Kernel: Fedora, 7.x, BPF LSM active (`/sys/kernel/security/lsm` contains `bpf`), BTF at `/sys/kernel/btf/vmlinux`.
 - Bridge: Python 3 + `websockets` (asyncio).
-- Dashboard: **Electron**. The renderer is plain HTML/CSS/JS with no framework and no build step.
+- Dashboard: **Electron**. Originally plain HTML/CSS/JS with no build step; changed 20 Oct to React 18 + Vite + TypeScript with a build step (see 6.4).
 - Demo/test tools: Python 3 stdlib only (plus `curl`/`nc` where noted).
 
 ### 5.1 Contract 1: Kernel structs and maps (`guard/bpf/sg_common.h`)
@@ -452,10 +452,11 @@ python3 bridge/bridge.py --fake --port 8765        # no kernel, any OS
 | LPM tries for the allowlist | CIDR ranges in one lookup |
 | Audit mode is the default | A bad policy can't cut off the machine during development |
 | Guard and bridge are separate processes | Only the guard needs root; the bridge and dashboard can be built and tested anywhere with `--fake` |
-| Electron renderer is plain HTML/JS | It also runs in a normal browser, which is the stage fallback if Electron breaks |
+| Electron renderer built with React + Vite into a single classic-script bundle (originally plain HTML/JS) | The built page still opens in a normal browser with `?bridge=`, which is the stage fallback if Electron breaks |
 
 ### 6.4 Electron dashboard requirements (Track U)
 
+- Stack (design change, 20 Oct): Electron + React 18 + Vite + TypeScript + Tailwind, with a build step. `npm run build` (`tsc && vite build`) writes a single classic-script bundle into `dashboard/renderer/`, which is committed; `npm start` rebuilds and launches Electron. The built `renderer/index.html` is meant to open in a plain browser with `?bridge=ws://<vm-ip>:8765` (the stage fallback; to be confirmed by Devansh).
 - `main.js`: one `BrowserWindow`, `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`. Supports `--kiosk`/fullscreen. Takes the bridge URL from the `SG_BRIDGE_URL` env var or a `--bridge=ws://...` argument (default `ws://127.0.0.1:8765`) and passes it to the renderer via `preload.js` (`contextBridge`).
 - The renderer opens the WebSocket itself. Content-Security-Policy allows `connect-src ws: wss:` and nothing remote otherwise.
 - The renderer also works opened directly in a browser: if no preload value exists, it reads `?bridge=` from the URL.

@@ -230,6 +230,7 @@ python3 bridge/bridge.py --fake --port 8765        # no kernel, any OS
 
 ## Dashboard (Track U)
 
+- Stack (design change, 20 Oct): Electron + React 18 + Vite + TypeScript + Tailwind, with a build step. `npm run build` (`tsc && vite build`) writes a single classic-script bundle into `dashboard/renderer/`, which is committed; `npm start` rebuilds and launches Electron. The built `renderer/index.html` is meant to open in a plain browser with `?bridge=ws://<vm-ip>:8765` (the stage fallback; to be confirmed by Devansh).
 - `main.js`: one `BrowserWindow`, `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`. Supports `--kiosk`/fullscreen. Bridge URL from `SG_BRIDGE_URL` env var or `--bridge=ws://...` (default `ws://127.0.0.1:8765`), passed to the renderer via `preload.js` (`contextBridge`).
 - The renderer opens the WebSocket itself. Content-Security-Policy allows `connect-src ws: wss:` and nothing remote otherwise.
 - The renderer also works opened directly in a browser: with no preload value it reads `?bridge=` from the URL.
@@ -248,7 +249,7 @@ python3 bridge/bridge.py --fake --port 8765        # no kernel, any OS
 | LPM tries for the allowlist | CIDR ranges in one lookup |
 | Audit mode is the default | A bad policy can't cut off the machine during development |
 | Guard and bridge are separate processes | Only the guard needs root; the bridge and dashboard can be built and tested anywhere with `--fake` |
-| Electron renderer is plain HTML/JS | It also runs in a normal browser, which is the stage fallback if Electron breaks |
+| Electron renderer built with React + Vite into a single classic-script bundle (originally plain HTML/JS) | The built page still opens in a normal browser with `?bridge=`, which is the stage fallback if Electron breaks |
 
 ## Known gaps
 

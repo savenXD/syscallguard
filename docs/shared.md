@@ -131,3 +131,21 @@ Template:
 **Who is affected:** Hifza (guard.py load call; already uses the flag on fix/demo-ready).
 **Action required:** none, informational.
 **Commit:** contract: add -fms-extensions to BPF load cflags
+
+### 2026-10-22 · Azaan (track K) · correction
+**What changed:** The two 2026-10-20 dashboard entries (Devansh) cite `dashboard/docs/phase4-demo.md` and `dashboard/docs/stretch-demo-protocol.md`, and give "uncommitted working-tree changes" as their commit. Neither document is in the repo. The `dashboard/mock_bridge.py` scenarios and the mock-only stretch payloads they describe are therefore undocumented in the tree.
+**Who is affected:** Devansh (dashboard), Suyash (rehearsal and video), Divyanshu and Azaan (future S1/S2 payloads).
+**Action required:** Devansh — commit those two documents, or append an entry saying they are withdrawn.
+**Commit:** docs: post-audit corrections and cross-track summary
+
+### 2026-10-22 · Azaan (track K) · correction
+**What changed:** Tonight's cross-track changes for the demo, on branch `fix/demo-ready` (merged to `main` after the VM end-to-end run):
+- `guard/guard.py` implemented against `main`'s `policy.load_policy` / `Policy` fields and `events.decode_event` / `EventContext`. Fills `allow_v4`, `allow_v6`, `config`, then `protected_inodes` last; READY/ERROR carry all 12 Contract 3 fields; keeps the hooks attached if the bridge dies.
+- BPF load cflags contract now includes `-fms-extensions` (ARCHITECTURE.md, brief, hifza.md).
+- Demo kit: `reset.sh` keeps the guard | bridge pipeline up, restarts `internal_api.py`, never prompts for sudo; `agent.py` defaults the attacker to the default-route gateway; curl mode runs `-sSv` so a kernel block shows "Operation not permitted" (curl 8 hides the errno without `-v`); stale stub headers removed; docs use the real agent CLI (`--mode … --attacker …`, `/query`); `docs/presentation/demo-runbook.md` written.
+- **`udp` and `preconnect` are NOT blocked until hook C (`socket_sendmsg`) lands**, and are off the judge list.
+- Dashboard stack recorded as React + Vite + TypeScript with a build step (ARCHITECTURE.md, brief 6.4).
+- Milestone acceptance rows still say `--exfil` (e.g. M3, M4); the real flag is `--mode`.
+**Who is affected:** Hifza (guard.py now exists in her file), Divyanshu (guard.py calls his decoder; no change to his files), Devansh (please confirm the browser fallback with `?bridge=`), Suyash (demo kit, runbook, judge list).
+**Action required:** Everyone — pull `main` once it's merged; don't push to `main` before the round. Suyash — read `docs/presentation/demo-runbook.md`. Devansh — confirm the browser fallback.
+**Commit:** docs: post-audit corrections and cross-track summary

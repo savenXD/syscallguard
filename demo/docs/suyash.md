@@ -53,7 +53,7 @@ All demo/test tools: Python 3 stdlib only (plus `curl`/`nc` where noted).
 2. POSTs to `--api` + `/query`. Allowed; prints the status.
 3. "Follows the README": attempts exfil per `MODE`:
    - `direct`: Python TCP connect + send
-   - `curl`: `subprocess` runs `curl -sS --data-binary @.env` (tests inheritance)
+   - `curl`: `subprocess` runs `curl -sSv --data-binary @.env` (tests inheritance)
    - `b64`: base64 then direct
    - `ipv6`: IPv4-mapped IPv6 (`::ffff:<attacker>`), checked as IPv4 by hook B
    - `udp`: `sendto`. **NOT BLOCKED until hook C lands** (hook C, `socket_sendmsg`, is not in the kernel yet)
