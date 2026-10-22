@@ -295,7 +295,7 @@ Notes for Track K:
 - Prefer `events.ringbuf_reserve()` + `ringbuf_submit()` to keep the event off the 512-byte stack.
 - Fill `comm` with `bpf_get_current_comm()`.
 - Hooks B and C fire on every connect/send on the system. Keep the untagged path to a single map lookup.
-- `guard.py` loads the program with `BPF(src_file=..., cflags=["-I<abs path to guard/bpf>"])`. LSM, tracepoint and raw-tracepoint probes auto-attach when bcc loads them.
+- `guard.py` loads the program with `BPF(src_file=..., cflags=["-I<abs path to guard/bpf>", "-fms-extensions"])`. Kernel 7.x headers need `-fms-extensions` (anonymous tagged struct members in `linux/fs.h`). LSM, tracepoint and raw-tracepoint probes auto-attach when bcc loads them.
 
 ### 5.3 Contract 2: Policy file (`policy/policy.example.toml`)
 

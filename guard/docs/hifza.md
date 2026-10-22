@@ -60,7 +60,7 @@ Startup, in order:
 
 1. Parse args, load and validate the policy (exit 2 on error). `--debug` turns on verbose logging, to stderr only.
 2. Load the BPF program:
-   `BPF(src_file=<abs path>/guard/bpf/syscallguard.bpf.c, cflags=["-I<abs path to guard/bpf>"])`. Build paths from `__file__` so it works from any working directory. LSM, tracepoint and raw-tracepoint probes auto-attach on load. If loading fails (compile error, verifier rejection), write an `ERROR` event with `"message"` = the bcc error to stdout, then exit **3**.
+   `BPF(src_file=<abs path>/guard/bpf/syscallguard.bpf.c, cflags=["-I<abs path to guard/bpf>", "-fms-extensions"])` (7.x headers need the flag). Build paths from `__file__` so it works from any working directory. LSM, tracepoint and raw-tracepoint probes auto-attach on load. If loading fails (compile error, verifier rejection), write an `ERROR` event with `"message"` = the bcc error to stdout, then exit **3**.
 3. Fill maps (names are Contract 1):
    - `protected_inodes`: key `st_ino` (u64), value = index into the policy `protect` list (u32).
    - `allow_v4` / `allow_v6`: one LPM entry per network. Key `prefixlen` = `net.prefixlen`, `addr` = `net.network_address.packed`. The value (u8) is unused by `check_dest`, only a hit matters.
@@ -110,7 +110,7 @@ The full JSON field table is in ARCHITECTURE.md, Contract 3. Divyanshu's decoder
 - [ ] **M3 Connect enforcement** (K + G, 19 Oct): Enforce mode: tagged `agent.py --exfil direct` → `PermissionError` + `BLOCK`; its POST to 127.0.0.1:8080 succeeds with `ALLOW`; an untagged `python3 -c` connect to the attacker succeeds; audit mode → all succeed + `WOULD_BLOCK`
 
 **Start now:** `policy.py` and its validation are **done** (see section 10): parsing, validation and the CLI are implemented and tested on any machine, no VM needed. Next is `guard/guard.py` -- CLI, BPF load, map population, `READY` emission, poll loop and signal handling. Use Azaan's 2026-10-19 correction when loading: `cflags=["-I" + <abs path to guard/bpf>, "-fms-extensions"]`.
-**Blocked by:** Contract 1 is agreed and Azaan's maps are already in `guard/bpf/syscallguard.bpf.c` (`protected_inodes`, `allow_v4`, `allow_v6`, `config` from section 5, plus Azaan's `tagged` and the `events` ring buffer), together with hook A (file_open tagging), fork/exit inheritance and hook B (socket_connect). Still outstanding: **hook C** (`socket_sendmsg`) exists only as a comment in the `.bpf.c` and is needed for M3's `ALLOW` event on the POST to 127.0.0.1:8080; and **Divyanshu's `guard/events.py`** is still a TODO stub with no `decode_event`, which the poll loop needs (stub it with `None` until it lands).
+**Blocked by:** Contract 1 is agreed and Azaan's maps are already in `guard/bpf/syscallguard.bpf.c` (`protected_inodes`, `allow_v4`, `allow_v6`, `config` from section 5, plus Azaan's `tagged` and the `events` ring buffer), together with hook A (file_open tagging), fork/exit inheritance and hook B (socket_connect). Hook B emits the `ALLOW` event on the connect to 127.0.0.1:8080, so M3 does not need hook C (`socket_sendmsg`, still a TODO, needed only for M4). Divyanshu's `decode_event` is in `guard/events.py`.
 **You block:** Azaan (your loader is how his hooks get tested), Divyanshu's bridge real mode (M5 real), Suyash's attack matrix (M6).
 
 ## 7. How to run and test your part

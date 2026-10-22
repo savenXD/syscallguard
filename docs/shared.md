@@ -125,3 +125,9 @@ Template:
 **Who is affected:** Divyanshu (real bridge integration), Suyash (stage launches and fallback distribution), Devansh (branding and releases).
 **Action required:** Use an explicit VM bridge address for real packaged demonstrations. `npm run demo -- --kiosk` is the self-contained mock rehearsal command. Existing guard/bridge contracts and other tracks' implementation files are unchanged.
 **Commit:** uncommitted working-tree changes (desktop branding and packaging)
+
+### 2026-10-22 · Azaan (track K) · contract
+**What changed:** The BPF load call now includes `-fms-extensions`: `BPF(src_file=..., cflags=["-I<abs path to guard/bpf>", "-fms-extensions"])` in ARCHITECTURE.md (implementation notes), PROJECT_BRIEF 5.2 and guard/docs/hifza.md. This lands the contract update promised in the 2026-10-19 correction; without the flag the program does not compile on 7.x headers. Also corrected guard/docs/hifza.md: hook B emits the `ALLOW` on connect, so M3 does not need hook C.
+**Who is affected:** Hifza (guard.py load call; already uses the flag on fix/demo-ready).
+**Action required:** none, informational.
+**Commit:** contract: add -fms-extensions to BPF load cflags
